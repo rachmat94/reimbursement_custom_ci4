@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Libraries\FileLimiter;
 use App\Models\BerkasModel;
 use App\Models\CategoryModel;
 use App\Models\JenisBerkasModel;
@@ -356,6 +357,9 @@ class Reimbursement extends BaseController
                     ]); // atau rollback lainnya
                     throw new Exception("Pengajuan gagal disimpan karena ada berkas yang tidak valid.", 400);
                 } else {
+                    if((getenv("demo"))){
+                        FileLimiter::limitFiles(appConfigDataPath("reimbursement/berkas"), 100);
+                    }
                     if ($status == "diajukan") {
                         appJsonRespondSuccess(true, "Pengajuan berhasil disimpan untuk dilakukan validasi.", $redirect);
                         return;
