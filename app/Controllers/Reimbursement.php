@@ -316,9 +316,11 @@ class Reimbursement extends BaseController
                             continue;
                         }
 
-                        // Upload
+                        $claimantUGroupId = $dUser["group_id"];
+                        $claimantUGroupKey = $dUser["group_key"];
                         $newName = $file->getRandomName();
-                        $uploadPath = appConfigDataPath("reimbursement/berkas/" . $swTahun . "/" . "triwulan_" . $swTriwulan . "/" . $userId . "_" . $dUser["usr_key"]);
+                        $uploadPath = appConfigDataPath("reimbursement/berkas/" . $swTahun . "/" . "triwulan_" . $swTriwulan . "/" . $claimantUGroupKey);
+                        log_message("alert","Reim upload path =" . $uploadPath);
                         $filePath = $uploadPath . "/" . $newName;
                         $file->move($uploadPath, $newName);
                         if (!file_exists($filePath)) {
@@ -751,8 +753,10 @@ class Reimbursement extends BaseController
                 $reimTriwulan = $dReimbursement["reim_triwulan_no"];
                 $reimClaimantUsrId = $dReimbursement["reim_claimant_usr_id"];
                 $reimClaimantUsrKey = $dReimbursement["uc_usr_key"];
+                $reimClaimantUsrGroupKey = $dReimbursement["ucg_group_key"];
                 $newName = $file->getRandomName();
-                $uploadPath = appConfigDataPath("reimbursement/berkas/" . $reimTahun . "/" . "triwulan_" . $reimTriwulan . "/" . $reimClaimantUsrId . "_" . $reimClaimantUsrKey);
+                $uploadPath = appConfigDataPath("reimbursement/berkas/" . $reimTahun . "/" . "triwulan_" . $reimTriwulan . "/" . $reimClaimantUsrGroupKey);
+                log_message("alert","Reim Upload Path= " . $uploadPath);
                 $filePath = $uploadPath . "/" . $newName;
                 $file->move($uploadPath, $newName);
                 if (!file_exists($filePath)) {
@@ -891,11 +895,14 @@ class Reimbursement extends BaseController
             $reimClaimantUsrId = $dReimBerkas["reim_claimant_usr_id"];
             $reimClaimantUsrKey = $dReimBerkas["uc_usr_key"];
 
+            $reimClaimantUsrGroupKey = $dReimBerkas["ucg_group_key"];
+
             if ($this->BerkasModel->del([
                 "rb_id" => $dReimBerkas["rb_id"],
             ])) {
                 if (!empty($fName)) {
-                    $fPath = appConfigDataPath("reimbursement/berkas/" . $reimTriwulanTahun . "/" . "triwulan_" . $reimTriwulan . "/" . $reimClaimantUsrId . "_" . $reimClaimantUsrKey . $fName);
+                    $fPath = appConfigDataPath("reimbursement/berkas/" . $reimTriwulanTahun . "/" . "triwulan_" . $reimTriwulan . "/" . $reimClaimantUsrGroupKey . $fName);
+                    log_message("alert", "reim berkas uploaded=" . $fPath);
                     if (file_exists($fPath)) {
                         if (unlink($fPath)) {
                         } else {
@@ -989,114 +996,6 @@ class Reimbursement extends BaseController
                 "reim_id" => $reimId,
             ])) {
                 log_message("alert", "simpan perubahan draft berhasil.");
-                $dFailed = [];
-                $doRollback = false;
-                /*
-                $jbFiles = $this->request->getFiles();
-                foreach ($jbFiles['file_jb'] as $id => $file) :
-                    $jenisBerkasId = $id;
-
-                    // Cek jika tidak ada ID jenis berkas
-                    if (empty($jenisBerkasId)) {
-                        log_message("alert", "ID jenis berkas kosong.");
-                        $doRollback = true;
-                        $dFailed[] = "Id Jenis Berkas tidak ditemukan.";
-                        continue;
-                    }
-
-                    $dJenisBerkas = $this->JenisBerkasModel->get([
-                        "jb_id" => $jenisBerkasId,
-                    ], true);
-
-                    if (empty($dJenisBerkas)) {
-                        log_message("alert", "Jenis berkas dengan ID $jenisBerkasId tidak ditemukan.");
-                        $doRollback = true;
-                        $dFailed[] = "Jenis berkas dengan ID $jenisBerkasId tidak ditemukan.";
-                        continue;
-                    }
-
-                    $jbIsRequired = (bool) $dJenisBerkas["jb_is_required"];
-                    $jbMaxFileSizeMb = $dJenisBerkas["jb_max_file_size_mb"];
-                    $maxSizeBytes = $jbMaxFileSizeMb * 1024 * 1024;
-
-                    $allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
-                    $allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png'];
-
-                    // --- CEK APAKAH FILE DIUPLOAD --- //
-                    if ($file->getError() === 4) { // Tidak ada file yang diupload
-                        if ($jbIsRequired) {
-                            log_message("alert", "Berkas $jenisBerkasId wajib diunggah, tapi tidak ada file.");
-                            $doRollback = true;
-                            $dFailed[] = "Berkas $jenisBerkasId wajib diunggah, tapi tidak ada file.";
-                        } else {
-                            log_message("info", "Berkas $jenisBerkasId bersifat opsional, dan tidak diunggah.");
-                        }
-                        continue;
-                    }
-
-                    // --- CEK VALIDITAS FILE --- //
-                    if ($file->isValid() && !$file->hasMoved()) {
-                        // Validasi ukuran
-                        if ($file->getSize() > $maxSizeBytes) {
-                            log_message("alert", "File untuk ID $id melebihi batas ukuran maksimum {$jbMaxFileSizeMb}MB.");
-                            $doRollback = true;
-                            $dFailed[] = "File untuk ID $id melebihi batas ukuran maksimum {$jbMaxFileSizeMb}MB.";
-                            continue;
-                        }
-
-                        // Validasi ekstensi dan mime
-                        $ext = strtolower($file->getExtension());
-                        $mime = $file->getMimeType();
-
-                        if (!in_array($ext, $allowedExtensions) || !in_array($mime, $allowedMimeTypes)) {
-                            log_message("alert", "File ID $id memiliki tipe yang tidak diizinkan. Ext: $ext, Mime: $mime.");
-                            $doRollback = true;
-                            $dFailed[] = "File ID $id memiliki tipe yang tidak diizinkan. Ext: $ext, Mime: $mime.";
-                            continue;
-                        }
-
-                        // Upload
-                        $newName = $file->getRandomName();
-                        $uploadPath = appConfigDataPath("reimbursement/berkas/" . $reimTriwulanTahun . "/" . "triwulan_" . $reimTriwulan . "/" . $reimClaimantUsrId . "_" . $reimClaimantUsrKey);
-                        $filePath = $uploadPath . "/" . $newName;
-                        $file->move($uploadPath, $newName);
-                        if (!file_exists($filePath)) {
-                            $doRollback = true;
-                            log_message("alert", "File untuk ID $id tidak valid atau gagal diproses.");
-                            $dFailed[] = "File untuk ID $id tidak valid atau gagal diproses.";
-                            continue;
-                        }
-                        $uploadedFiles[] = $newName;
-                        $rbKey = $this->BerkasModel->generateKey();
-                        $rbNote = $this->request->getPost("txt_file_note[" . $id . "]") ?? "";
-                        $dAddBerkas = [
-                            "rb_key" => $rbKey,
-                            "rb_by_usr_id" => $sessUsrId,
-                            "rb_reim_id" => $reimId,
-                            "rb_jb_id" => $jenisBerkasId,
-                            "rb_file_name" => $newName,
-                            "rb_file_name_origin" => $file->getClientName(),
-                            "rb_note" => $rbNote,
-                            "rb_created_at" => appCurrentDateTime(),
-                        ];
-                        $rbId = $this->BerkasModel->add($dAddBerkas);
-                        if ($rbId > 0) {
-                            log_message("alert", "File untuk ID $id berhasil diupload dengan nama $newName.");
-                        } else {
-                            log_message("alert", "File untuk ID $id tidak valid atau gagal diproses.");
-                            $doRollback = true;
-                            $dFailed[] = "File untuk ID $id tidak valid atau gagal diproses.";
-                            continue;
-                        }
-                    } else {
-                        log_message("alert", "File untuk ID $id tidak valid atau gagal diproses.");
-                        $doRollback = true;
-                        $dFailed[] = "File untuk ID $id tidak valid atau gagal diproses.";
-                        continue;
-                    }
-                endforeach;
-                */
-                log_message("alert", "reimberkas=" . json_encode($dFailed));
                 $redirect = base_url("reimbursement/draft?reim_key=" . $reimKey);
                 appJsonRespondSuccess(true, "Simpan perubahan berhasil.", $redirect);
                 return;

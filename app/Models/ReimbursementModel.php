@@ -139,7 +139,8 @@ class ReimbursementModel extends Model
         $builder->join("tb_users as uby", "uby.usr_id = " . $this->table . ".reim_by_usr_id", "left");
         $builder->join("tb_users as uclaimant", "uclaimant.usr_id = " . $this->table . ".reim_claimant_usr_id", "left");
         $builder->join("tb_users as udiajukan", "udiajukan.usr_id = " . $this->table . ".reim_diajukan_by_usr_id", "left");
-        $builder->join("tb_users as uvalidator","uvalidator.usr_id = " . $this->table . ".reim_validation_by_usr_id","left");
+        $builder->join("tb_users as uvalidator", "uvalidator.usr_id = " . $this->table . ".reim_validation_by_usr_id", "left");
+        $builder->join("tb_group_user as ucgroup", "ucgroup.group_id = uclaimant.usr_group_id", "left");
         $builder->select($this->table . ".*");
         $builder->select("tb_categories.cat_name");
         $builder->select("tb_submission_window.sw_start_date,tb_submission_window.sw_end_date");
@@ -147,6 +148,7 @@ class ReimbursementModel extends Model
         $builder->select("uclaimant.usr_id as uc_usr_id,uclaimant.usr_key as uc_usr_key,uclaimant.usr_code as uc_usr_code,uclaimant.usr_username as uc_usr_username,uclaimant.usr_group_id as uc_usr_group_id");
         $builder->select("udiajukan.usr_id as ud_user_id,udiajukan.usr_code as ud_usr_code,udiajukan.usr_username as ud_usr_username");
         $builder->select("uvalidator.usr_id as uv_usr_id, uvalidator.usr_code as uv_usr_code, uvalidator.usr_username as uv_username");
+        $builder->select("ucgroup.group_key as ucg_group_key,ucgroup.group_code as ucg_group_code,ucgroup.group_name as ucg_group_name");
 
         if (!empty($where)) {
             $builder->where($where);

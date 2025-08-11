@@ -203,7 +203,7 @@ class UserModel extends Model
         }
 
         $builder->select("tb_users.*");
-        $builder->select("tb_group_user.group_name");
+        $builder->select("tb_group_user.*");
         if ($single) {
             $data = $builder->get(1)->getRowArray();
         } else {

@@ -37,8 +37,8 @@ if (!$isValid) {
                     <div class="card-body border">
                         <h5>Draft Pengajuan</h5>
                         <dl>
-                            <dt>Triwulan: <?= $dReimbursement["reim_triwulan_no"]; ?>, <?= $dReimbursement["reim_triwulan_tahun"]; ?></dt>
-                            <dt>Group: <?= $dAccess["data"]["group_name"] ?? "-"; ?></dt>
+                            <dd><b>Triwulan:</b> <?= $dReimbursement["reim_triwulan_no"]; ?>, <?= $dReimbursement["reim_triwulan_tahun"]; ?></dd>
+                            <dd><b>Group:</b> <?= "[ " . $dReimbursement["ucg_group_code"] . " ] " . $dReimbursement["ucg_group_name"]; ?></dd>
                         </dl>
                     </div>
                     <div class="card-body">
@@ -89,8 +89,7 @@ if (!$isValid) {
                             </div>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <?= d($inJB); ?>
+                    <div class="card-body pt-1">
                         <h6>Berkas:</h6>
                         <div class="table-responsive">
                             <table class="table table-sm table-hover border" style="width: 100%;">
@@ -118,27 +117,8 @@ if (!$isValid) {
                                                 File Pdf atau gambar<br>
                                                 <?= "Makimal: " .  $vJb["jb_max_file_size_mb"] . " Mb"; ?>
                                             </td>
-                                            <?php
-                                            /*
-                                            <td style="width: 300px;">
-                                                <input type="file" class="form-control form-control-sm" name="file_jb[<?= $vJb['jb_id']; ?>]" id="file_jb_<?= $vJb['jb_id']; ?>">
-                                                <p class="text-danger">* File lama akan dihapus dan digantikan dengan yang baru diupload.</p>
-                                                <details class="mt-2">
-                                                    <summary>Tambah Catatan / Keterangan:</summary>
-                                                    <p>
-                                                        <textarea name="txt_file_note[<?= $vJb['jb_id']; ?>]" id="txt_file_note_<?= $vJb['jb_id']; ?>" class="form-control form-control-sm"></textarea>
-                                                    </p>
-                                                </details>
 
-                                            </td>
-                                            */
-                                            ?>
                                             <td style="width: 160px;">
-                                                <?php
-                                                /*
-                                                <button type="button" onclick="clearFileInput('file_jb_<?= $vJb['jb_id']; ?>')" class="btn btn-link text-danger">Clear</button>
-                                                */
-                                                ?>
                                                 <button type="button" class="btn btn-dark btn-sm mt-2" onclick="showUploadReimBerkas('<?= $dReimbursement['reim_key']; ?>','<?= $vJb['jb_key']; ?>')"><i class="fas fa-upload"></i> Upload Berkas</button>
                                             </td>
                                         </tr>
