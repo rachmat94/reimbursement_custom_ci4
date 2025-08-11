@@ -81,8 +81,8 @@ function masterReimbursementStatus($type = "", bool $forceSingle = false)
             "color" => "primary",
             "description" => "",
         ],
-        "diverifikasi" => [
-            "code" => "diverifikasi",
+        "verifikasi" => [
+            "code" => "verifikasi",
             "label" => "Diverifikasi",
             "color" => "info",
             "description" => "",

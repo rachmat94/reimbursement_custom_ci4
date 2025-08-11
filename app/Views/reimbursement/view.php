@@ -72,7 +72,7 @@
                             <tr>
                                 <td><?= $vBerkas["jb_name"]; ?></td>
                                 <td>
-                                    <?= $vBerkas["rb_file_name"]; ?>
+                                    <a role="button" href="#" onclick="showPreviewReimBerkas('<?= $vBerkas['rb_key']; ?>')"><?= $vBerkas["rb_file_name"]; ?></a>
                                     <details>
                                         <summary>Catatan / Keterangan</summary>
                                         <p>
@@ -131,4 +131,5 @@
 
 <?= $this->endSection(); ?>
 <?= $this->section("script_1"); ?>
+<?= appViewInjectScript("reimbursement", "berkas/show_preview_script"); ?>
 <?= $this->endSection(); ?>

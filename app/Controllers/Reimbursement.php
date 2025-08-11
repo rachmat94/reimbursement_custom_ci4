@@ -320,7 +320,7 @@ class Reimbursement extends BaseController
                         $claimantUGroupKey = $dUser["group_key"];
                         $newName = $file->getRandomName();
                         $uploadPath = appConfigDataPath("reimbursement/berkas/" . $swTahun . "/" . "triwulan_" . $swTriwulan . "/" . $claimantUGroupKey);
-                        log_message("alert","Reim upload path =" . $uploadPath);
+                        log_message("alert", "Reim upload path =" . $uploadPath);
                         $filePath = $uploadPath . "/" . $newName;
                         $file->move($uploadPath, $newName);
                         if (!file_exists($filePath)) {
@@ -688,13 +688,13 @@ class Reimbursement extends BaseController
             if (empty($dReimBerkas)) {
                 throw new Exception("Data tidak ditemukan.", 400);
             }
-            
+
             $berkasFName = $dReimBerkas["rb_file_name"];
             $reimTahun = $dReimBerkas["reim_triwulan_tahun"];
             $reimTriwulan = $dReimBerkas["reim_triwulan_no"];
             $claimantUGroupKey = $dReimBerkas["ucg_group_key"];
 
-            $dFile = appGetReimBerkas($rbKey,$berkasFName,$reimTahun,$reimTriwulan,$claimantUGroupKey);
+            $dFile = appGetReimBerkas($rbKey, $berkasFName, $reimTahun, $reimTriwulan, $claimantUGroupKey);
             $dView = [
                 "viewDir" => $this->viewDir,
                 "dReimBerkas" => $dReimBerkas,
@@ -809,7 +809,7 @@ class Reimbursement extends BaseController
                 $reimClaimantUsrGroupKey = $dReimbursement["ucg_group_key"];
                 $newName = $file->getRandomName();
                 $uploadPath = appConfigDataPath("reimbursement/berkas/" . $reimTahun . "/" . "triwulan_" . $reimTriwulan . "/" . $reimClaimantUsrGroupKey);
-                log_message("alert","Reim Upload Path= " . $uploadPath);
+                log_message("alert", "Reim Upload Path= " . $uploadPath);
                 $filePath = $uploadPath . "/" . $newName;
                 $file->move($uploadPath, $newName);
                 if (!file_exists($filePath)) {
@@ -1045,11 +1045,17 @@ class Reimbursement extends BaseController
                 "reim_detail" => $detail,
                 "reim_updated_at" => appCurrentDateTime(),
             ];
+            if ($btnAction == "save_ajukan") {
+                $dEdit["reim_status"] = "diajukan";
+                $redirect = base_url("reimbursement/view?reim_key=" . $reimKey);
+            } else {
+                $redirect = base_url("reimbursement/draft?reim_key=" . $reimKey);
+            }
             if ($this->ReimbursementModel->edit($dEdit, [
                 "reim_id" => $reimId,
             ])) {
                 log_message("alert", "simpan perubahan draft berhasil.");
-                $redirect = base_url("reimbursement/draft?reim_key=" . $reimKey);
+
                 appJsonRespondSuccess(true, "Simpan perubahan berhasil.", $redirect);
                 return;
             } else {

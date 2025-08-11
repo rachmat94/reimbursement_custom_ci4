@@ -36,7 +36,6 @@
                 <!-- /.card-tools -->
             </div>
             <div class="card-body ">
-                <?= d($dGroupUsers); ?>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover" style="width: 100%;" id="dtbl_group_users">
                         <thead>
