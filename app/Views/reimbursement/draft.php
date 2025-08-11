@@ -139,7 +139,7 @@ if (!$isValid) {
                                                 <button type="button" onclick="clearFileInput('file_jb_<?= $vJb['jb_id']; ?>')" class="btn btn-link text-danger">Clear</button>
                                                 */
                                                 ?>
-                                                <button type="button" class="btn btn-dark btn-sm mt-2" onclick="showUploadReimBerkas('<?= $dReimbursement['reim_key']; ?>')"><i class="fas fa-upload"></i> Upload Berkas</button>
+                                                <button type="button" class="btn btn-dark btn-sm mt-2" onclick="showUploadReimBerkas('<?= $dReimbursement['reim_key']; ?>','<?= $vJb['jb_key']; ?>')"><i class="fas fa-upload"></i> Upload Berkas</button>
                                             </td>
                                         </tr>
                                     <?php
@@ -229,5 +229,6 @@ if (!$isValid) {
     })
 </script>
 <?= appViewInjectScript("reimbursement", "submit_save_draft_script"); ?>
-<?= appViewInjectScript("reimbursement", "do_delete_reimberkas_script"); ?>
+<?= appViewInjectScript("reimbursement", "berkas/do_delete_script"); ?>
+<?= appViewInjectScript("reimbursement", "berkas/show_upload_script"); ?>
 <?= $this->endSection(); ?>

@@ -144,7 +144,7 @@ class ReimbursementModel extends Model
         $builder->select("tb_categories.cat_name");
         $builder->select("tb_submission_window.sw_start_date,tb_submission_window.sw_end_date");
         $builder->select("uby.usr_id as uby_usr_id,uby.usr_code as uby_usr_code,uby.usr_username as uby_usr_username");
-        $builder->select("uclaimant.usr_id as uc_usr_id,uclaimant.usr_code as uc_usr_code,uclaimant.usr_username as uc_usr_username");
+        $builder->select("uclaimant.usr_id as uc_usr_id,uclaimant.usr_key as uc_usr_key,uclaimant.usr_code as uc_usr_code,uclaimant.usr_username as uc_usr_username,uclaimant.usr_group_id as uc_usr_group_id");
         $builder->select("udiajukan.usr_id as ud_user_id,udiajukan.usr_code as ud_usr_code,udiajukan.usr_username as ud_usr_username");
         $builder->select("uvalidator.usr_id as uv_usr_id, uvalidator.usr_code as uv_usr_code, uvalidator.usr_username as uv_username");
 

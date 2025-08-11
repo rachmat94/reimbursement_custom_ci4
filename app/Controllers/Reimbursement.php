@@ -134,7 +134,7 @@ class Reimbursement extends BaseController
     {
         $this->_onlyPostandAjax();
         try {
-            $dAccess = authVerifyAccess(false, "c_reimbursement");
+            $dAccess = authVerifyAccess(false);
             if (!$dAccess["success"]) {
                 return redirect()->to(base_url('login'))->with("alert", [
                     "code" => "error",
@@ -557,6 +557,204 @@ class Reimbursement extends BaseController
             $this->cData["dReimBerkas"] = $dReimBerkas;
             $this->cData["dReimbursement"] = $dReimbursement;
             return view($this->viewDir . "/view", $this->cData);
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+
+    public function doUploadBerkas()
+    {
+        try {
+            $dAccess = authVerifyAccess(false, "u_reimbursement");
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+
+            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "admin_group") {
+                throw new Exception("Kamu tidak memiliki akses.", 400);
+            }
+
+            $reimId = $this->request->getPost("hdn_reim_id") ?? "";
+            $reimKey = $this->request->getPost("hdn_reim_key") ?? "";
+            $jbKey = $this->request->getPost("hdn_jb_key") ?? "";
+            $note = $this->request->getPost("txt_note") ?? "";
+
+            if (empty($reimId)) {
+                throw new Exception("Data Reimbursement tidak ada.", 400);
+            }
+            if (empty($reimKey)) {
+                throw new Exception("Data Reimbursement tidak ada.", 400);
+            }
+            if (empty($jbKey)) {
+                throw new Exception("Data Jenis Berkas tidak ada.", 400);
+            }
+            $dReimbursement = $this->ReimbursementModel->get([
+                "reim_key" => $reimKey,
+                "reim_id" => $reimId,
+            ], true);
+            if (empty($dReimbursement)) {
+                throw new Exception("Data Reimbursement tidak ditemukan.", 400);
+            }
+            $dJenisBerkas = $this->JenisBerkasModel->get([
+                "jb_key" => $jbKey,
+            ], true);
+            if (empty($dJenisBerkas)) {
+                throw new Exception("Data Jenis Berkas tidak ditemukan.", 400);
+            }
+
+            if ($sessUsrId != authMasterUserId()) {
+                if ($sessGroupId != $dReimbursement["uc_usr_group_id"]) {
+                    throw new Exception("Anda tidak memiliki akses.", 400);
+                }
+            }
+
+            $jenisBerkasId = $dJenisBerkas["jb_id"];
+            $jbName = $dJenisBerkas["jb_name"];
+            $jbIsRequired = (bool) $dJenisBerkas["jb_is_required"];
+            $jbMaxFileSizeMb = $dJenisBerkas["jb_max_file_size_mb"];
+            $maxSizeBytes = $jbMaxFileSizeMb * 1024 * 1024;
+
+            $allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+            $allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+
+            $file = $this->request->getFile("file_berkas");
+            // --- CEK APAKAH FILE DIUPLOAD --- //
+            if ($file->getError() === 4) { // Tidak ada file yang diupload
+                if ($jbIsRequired) {
+                    log_message("alert", "Berkas $jenisBerkasId wajib diunggah, tapi tidak ada file.");
+                } else {
+                    log_message("info", "Berkas $jenisBerkasId bersifat opsional, dan tidak diunggah.");
+                }
+                throw new Exception("Tidak ada file yang akan diupload.", 400);
+            }
+
+            // --- CEK VALIDITAS FILE --- //
+            if ($file->isValid() && !$file->hasMoved()) {
+                // Validasi ukuran
+                if ($file->getSize() > $maxSizeBytes) {
+                    log_message("alert", "File  melebihi batas ukuran maksimum {$jbMaxFileSizeMb}MB.");
+                    throw new Exception("Ukurang maksimum $jbMaxFileSizeMb MB", 400);
+                }
+
+                // Validasi ekstensi dan mime
+                $ext = strtolower($file->getExtension());
+                $mime = $file->getMimeType();
+
+                if (!in_array($ext, $allowedExtensions) || !in_array($mime, $allowedMimeTypes)) {
+                    log_message("alert", "File memiliki tipe yang tidak diizinkan. Ext: $ext, Mime: $mime.");
+                    throw new Exception("Tipe file tidak diizinkan.", 400);
+                }
+
+                // Upload
+                $reimTahun = $dReimbursement["reim_triwulan_tahun"];
+                $reimTriwulan = $dReimbursement["reim_triwulan_no"];
+                $reimClaimantUsrId = $dReimbursement["reim_claimant_usr_id"];
+                $reimClaimantUsrKey = $dReimbursement["uc_usr_key"];
+                $newName = $file->getRandomName();
+                $uploadPath = appConfigDataPath("reimbursement/berkas/" . $reimTahun . "/" . "triwulan_" . $reimTriwulan . "/" . $reimClaimantUsrId . "_" . $reimClaimantUsrKey);
+                $filePath = $uploadPath . "/" . $newName;
+                $file->move($uploadPath, $newName);
+                if (!file_exists($filePath)) {
+                    $doRollback = true;
+                    log_message("alert", "File  tidak valid atau gagal diproses.");
+                    throw new Exception("Gagal upload file.", 400);
+                }
+                $uploadedFiles[] = $newName;
+                $rbKey = $this->BerkasModel->generateKey();
+                $dAddBerkas = [
+                    "rb_key" => $rbKey,
+                    "rb_by_usr_id" => $sessUsrId,
+                    "rb_reim_id" => $reimId,
+                    "rb_jb_id" => $jenisBerkasId,
+                    "rb_file_name" => $newName,
+                    "rb_file_name_origin" => $file->getClientName(),
+                    "rb_note" => $note,
+                    "rb_created_at" => appCurrentDateTime(),
+                ];
+                $rbId = $this->BerkasModel->add($dAddBerkas);
+                if ($rbId > 0) {
+                    log_message("alert", "File  berhasil diupload dengan nama $newName.");
+                    $redirect = $this->request->getUserAgent()->getReferrer();
+                    appJsonRespondSuccess(true, "File berhasil diupload.", $redirect);
+                    return;
+                } else {
+                    log_message("alert", "File tidak valid atau gagal diproses.");
+                    throw new Exception("Upload file gagal.", 400);
+                }
+            } else {
+                log_message("alert", "File tidak valid atau gagal diproses.");
+                throw new Exception("Upload file gagal.", 400);
+            }
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+
+    public function showUploadBerkas()
+    {
+        try {
+            $dAccess = authVerifyAccess(false, "u_reimbursement");
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+
+            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "admin_group") {
+                throw new Exception("Kamu tidak memiliki akses.", 400);
+            }
+
+            $reimKey = $this->request->getPost("reim_key") ?? "";
+            $jbKey = $this->request->getPost("jb_key") ?? "";
+
+            if (empty($reimKey)) {
+                throw new Exception("Data Reimbursement tidak ada.", 400);
+            }
+            if (empty($jbKey)) {
+                throw new Exception("Data Jenis Berkas tidak ada.", 400);
+            }
+            $dReimbursement = $this->ReimbursementModel->get([
+                "reim_key" => $reimKey,
+            ], true);
+            if (empty($dReimbursement)) {
+                throw new Exception("Data Reimbursement tidak ditemukan.", 400);
+            }
+            $dJenisBerkas = $this->JenisBerkasModel->get([
+                "jb_key" => $jbKey,
+            ], true);
+            if (empty($dJenisBerkas)) {
+                throw new Exception("Data Jenis Berkas tidak ditemukan.", 400);
+            }
+
+            if ($sessUsrId != authMasterUserId()) {
+                if ($sessGroupId != $dReimbursement["uc_usr_group_id"]) {
+                    throw new Exception("Anda tidak memiliki akses.", 400);
+                }
+            }
+            $dView = [
+                "viewDir" => $this->viewDir,
+                "dReimbursement" => $dReimbursement,
+                "dJenisBerkas" => $dJenisBerkas,
+            ];
+            $redirect = $this->request->getUserAgent()->getReferrer();
+            $view = appViewInjectModal($this->viewDir, "berkas/upload_modal", $dView);
+            $script = appViewInjectScript($this->viewDir, "berkas/submit_upload_script");
+            appJsonRespondSuccess(true, "Request done.", $redirect, $view, $script);
+            return;
         } catch (\Throwable $th) {
             appSaveThrowable($th);
             return $this->sendResponse($th->getCode(), $th->getMessage());
