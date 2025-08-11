@@ -563,6 +563,66 @@ class Reimbursement extends BaseController
         }
     }
 
+    public function doDeleteBerkas()
+    {
+        try {
+            $dAccess = authVerifyAccess(false, "u_reimbursement");
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+
+            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "admin_group") {
+                throw new Exception("Kamu tidak memiliki akses.", 400);
+            }
+
+            $rbKey = $this->request->getPost("rb_key") ?? "";
+
+            if (empty($rbKey)) {
+                throw new Exception("Required data not found.", 400);
+            }
+
+            $dReimBerkas = $this->BerkasModel->get([
+                "rb_key" => $rbKey,
+            ], true);
+            if (empty($dReimBerkas)) {
+                throw new Exception("Data tidak ditemukan atau sudah dihapus.", 404);
+            }
+            $fName = $dReimBerkas["rb_file_name"];
+            $reimTriwulan = $dReimBerkas["reim_triwulan_no"];
+            $reimTriwulanTahun = $dReimBerkas["reim_triwulan_tahun"];
+            $reimClaimantUsrId = $dReimBerkas["reim_claimant_usr_id"];
+            $reimClaimantUsrKey = $dReimBerkas["uc_usr_key"];
+
+            if ($this->BerkasModel->del([
+                "rb_id" => $dReimBerkas["rb_id"],
+            ])) {
+                if (!empty($fName)) {
+                    $fPath = appConfigDataPath("reimbursement/berkas/" . $reimTriwulanTahun . "/" . "triwulan_" . $reimTriwulan . "/" . $reimClaimantUsrId . "_" . $reimClaimantUsrKey . $fName);
+                    if (file_exists($fPath)) {
+                        if (unlink($fPath)) {
+                        } else {
+                            log_message("alert", "gagal hapus berkas: " . $fPath);
+                        }
+                    }
+                }
+                $redirect = $this->request->getUserAgent()->getReferrer();
+                appJsonRespondSuccess(true, "Hapus berkas berhasil.", $redirect);
+                return;
+            } else {
+                throw new Exception("Gagal menghapus berkas.", 400);
+            }
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
 
     public function doSaveDraft()
     {
@@ -640,6 +700,7 @@ class Reimbursement extends BaseController
                 log_message("alert", "simpan perubahan draft berhasil.");
                 $dFailed = [];
                 $doRollback = false;
+                /*
                 $jbFiles = $this->request->getFiles();
                 foreach ($jbFiles['file_jb'] as $id => $file) :
                     $jenisBerkasId = $id;
@@ -743,6 +804,7 @@ class Reimbursement extends BaseController
                         continue;
                     }
                 endforeach;
+                */
                 log_message("alert", "reimberkas=" . json_encode($dFailed));
                 $redirect = base_url("reimbursement/draft?reim_key=" . $reimKey);
                 appJsonRespondSuccess(true, "Simpan perubahan berhasil.", $redirect);

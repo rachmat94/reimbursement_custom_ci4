@@ -135,9 +135,13 @@ class BerkasModel extends Model
     public function get($where = "", $row = false)
     {
         $builder = $this->db->table($this->table);
-        $builder->join("tb_jenis_berkas","tb_jenis_berkas.jb_id = " . $this->table.".rb_jb_id","left");
+        $builder->join("tb_jenis_berkas", "tb_jenis_berkas.jb_id = " . $this->table . ".rb_jb_id", "left");
+        $builder->join("tb_reimbursements", "tb_reimbursements.reim_id = " . $this->table . ".rb_reim_id");
+        $builder->join("tb_users as uclaimant", "uclaimant.usr_id = tb_reimbursements.reim_claimant_usr_id");
         $builder->select($this->table . ".*");
         $builder->select("tb_jenis_berkas.jb_name");
+        $builder->select("tb_reimbursements.reim_triwulan_no,tb_reimbursements.reim_triwulan_tahun,tb_reimbursements.reim_claimant_usr_id");
+        $builder->select("uclaimant.usr_key as uc_usr_key");
         if ($where != "") {
             $builder->where($where);
         }

@@ -90,69 +90,88 @@ if (!$isValid) {
                         </div>
                     </div>
                     <div class="card-body">
+                        <?= d($inJB); ?>
                         <h6>Berkas:</h6>
                         <div class="table-responsive">
                             <table class="table table-sm table-hover border" style="width: 100%;">
                                 <?php
                                 foreach ($dJenisBerkas ?? [] as $kJb => $vJb) {
                                     $dReimBerkas = $vJb["dReimBerkas"];
+
+                                    if (empty($dReimBerkas)) {
                                 ?>
-                                    <tr>
-                                        <td>
-                                            <h6><?= $vJb["jb_name"]; ?></h6>
-                                            <details>
-                                                <summary>Deskripsi:</summary>
-                                                <p>
-                                                    <?= $vJb["jb_description"]; ?>
-                                                </p>
-                                            </details>
+                                        <tr>
+                                            <td>
+                                                <h6><?= $vJb["jb_name"]; ?></h6>
+                                                <details>
+                                                    <summary>Deskripsi:</summary>
+                                                    <p>
+                                                        <?= $vJb["jb_description"]; ?>
+                                                    </p>
+                                                </details>
 
-                                        </td>
-                                        <td style="width: 100px;">
-                                            <?= ($vJb["jb_is_required"] == 1) ? "Wajib" : "Tidak Wajib"; ?>
-                                        </td>
-                                        <td style="width: 160px;">
-                                            File Pdf atau gambar<br>
-                                            <?= "Makimal: " .  $vJb["jb_max_file_size_mb"] . " Mb"; ?>
-                                        </td>
-                                        <td style="width: 300px;">
-                                            <input type="file" class="form-control form-control-sm" name="file_jb[<?= $vJb['jb_id']; ?>]" id="file_jb_<?= $vJb['jb_id']; ?>">
-                                            <p class="text-danger">* File lama akan dihapus dan digantikan dengan yang baru diupload.</p>
-                                            <details class="mt-2">
-                                                <summary>Tambah Catatan / Keterangan:</summary>
-                                                <p>
-                                                    <textarea name="txt_file_note[<?= $vJb['jb_id']; ?>]" id="txt_file_note_<?= $vJb['jb_id']; ?>" class="form-control form-control-sm"></textarea>
-                                                </p>
-                                            </details>
+                                            </td>
+                                            <td style="width: 100px;">
+                                                <?= ($vJb["jb_is_required"] == 1) ? "Wajib" : "Tidak Wajib"; ?>
+                                            </td>
+                                            <td style="width: 160px;">
+                                                File Pdf atau gambar<br>
+                                                <?= "Makimal: " .  $vJb["jb_max_file_size_mb"] . " Mb"; ?>
+                                            </td>
+                                            <?php
+                                            /*
+                                            <td style="width: 300px;">
+                                                <input type="file" class="form-control form-control-sm" name="file_jb[<?= $vJb['jb_id']; ?>]" id="file_jb_<?= $vJb['jb_id']; ?>">
+                                                <p class="text-danger">* File lama akan dihapus dan digantikan dengan yang baru diupload.</p>
+                                                <details class="mt-2">
+                                                    <summary>Tambah Catatan / Keterangan:</summary>
+                                                    <p>
+                                                        <textarea name="txt_file_note[<?= $vJb['jb_id']; ?>]" id="txt_file_note_<?= $vJb['jb_id']; ?>" class="form-control form-control-sm"></textarea>
+                                                    </p>
+                                                </details>
 
-                                        </td>
-                                        <td style="width: 60px;">
-                                            <button type="button" onclick="clearFileInput('file_jb_<?= $vJb['jb_id']; ?>')" class="btn btn-link text-danger">Clear</button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="5">
-                                            <ul>
+                                            </td>
+                                            */
+                                            ?>
+                                            <td style="width: 160px;">
                                                 <?php
-                                                foreach ($dReimBerkas as $vBerkas) {
+                                                /*
+                                                <button type="button" onclick="clearFileInput('file_jb_<?= $vJb['jb_id']; ?>')" class="btn btn-link text-danger">Clear</button>
+                                                */
                                                 ?>
-                                                    <li>
-                                                        <h6><?= $vBerkas["rb_file_name"]; ?></h6>
-                                                        <b>Catatan:</b>
-                                                        <p>
-                                                            <?= $vBerkas["rb_note"]; ?>
-                                                        </p>
-                                                        <p>
-                                                            <b>Diupload Pada:</b> <?= appFormatTanggalIndonesia($vBerkas["rb_created_at"]); ?><br>
-                                                            <button type="button" class="btn btn-danger btn-sm mt-2" onclick="doDelReimBerkas('<?= $vBerkas['rb_key']; ?>')">Hapus Berkas</button>
-                                                        </p>
-                                                    </li>
-                                                <?php
-                                                }
-                                                ?>
-                                            </ul>
-                                        </td>
-                                    </tr>
+                                                <button type="button" class="btn btn-dark btn-sm mt-2" onclick="showUploadReimBerkas('<?= $dReimbursement['reim_key']; ?>')"><i class="fas fa-upload"></i> Upload Berkas</button>
+                                            </td>
+                                        </tr>
+                                    <?php
+                                    } else {
+                                    ?>
+                                        <tr>
+                                            <td colspan="5">
+                                                <ul>
+                                                    <?php
+                                                    foreach ($dReimBerkas as $vBerkas) {
+                                                    ?>
+                                                        <li>
+                                                            <h6><?= $vJb["jb_name"]; ?> | <?= $vBerkas["rb_file_name"]; ?></h6>
+                                                            <b>Catatan:</b>
+                                                            <p>
+                                                                <?= $vBerkas["rb_note"]; ?>
+                                                            </p>
+                                                            <p>
+                                                                <b>Diupload Pada:</b> <?= appFormatTanggalIndonesia($vBerkas["rb_created_at"]); ?><br>
+                                                                <button type="button" class="btn btn-danger btn-sm mt-2" onclick="doDelReimBerkas('<?= $vBerkas['rb_key']; ?>')">Hapus Berkas</button>
+                                                                <button type="button" class="btn btn-warning btn-sm mt-2" onclick="showEditReimBerkas('<?= $vBerkas['rb_key']; ?>')">Edit Berkas</button>
+                                                            </p>
+                                                        </li>
+                                                    <?php
+                                                    }
+                                                    ?>
+                                                </ul>
+                                            </td>
+                                        </tr>
+                                    <?php
+                                    }
+                                    ?>
                                     <tr>
                                         <td colspan="5">
                                             &nbsp;
@@ -210,4 +229,5 @@ if (!$isValid) {
     })
 </script>
 <?= appViewInjectScript("reimbursement", "submit_save_draft_script"); ?>
+<?= appViewInjectScript("reimbursement", "do_delete_reimberkas_script"); ?>
 <?= $this->endSection(); ?>

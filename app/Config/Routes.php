@@ -121,6 +121,7 @@ $routes->group("reimbursement", static function ($routes) {
     $routes->post("dtbl_list", "Reimbursement::dtbl_list");
     $routes->get("draft", "Reimbursement::draft");
     $routes->post("do_save_draft", "Reimbursement::doSaveDraft");
+    $routes->post("do_delete_berkas","Reimbursement::doDeleteBerkas");
     // $routes->post("show_add", "Reimbursement::showAdd");
     // $routes->post("dtbl_main", "Reimbursement::dtblMain");
     // $routes->post("show_preview", "Reimbursement::showPreview");

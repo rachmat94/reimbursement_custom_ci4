@@ -110,7 +110,7 @@ abstract class BaseController extends Controller
             $strtErr = appViewInjectContent("layout", "error_content", [
                 "message" => "[ " . $code . " ] " .  $message,
             ]);
-            log_message("error",$strtErr);
+            // log_message("error",$strtErr);
             $strtErr = trim($strtErr);
             if (empty($strtErr)) {
                 ob_clean();
