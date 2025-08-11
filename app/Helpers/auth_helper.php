@@ -2,7 +2,7 @@
 
 use App\Libraries\AppConfig;
 use App\Models\AuthModel;
-use App\Models\userSessionModel;
+use App\Models\UserSessionModel;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
@@ -62,7 +62,7 @@ function authVerifyAccess(bool $onlyLogin = false, string $accessResource = "", 
 
         // log_message("alert", "Dec JWT=" . json_encode($decodedJWT));
         // log_message("alert", "JWT EXP=" . $decodedJWT["exp"] . "|" . date("Y-m-d H:i:s", $decodedJWT["exp"]));
-        $UserSessionModel = new userSessionModel();
+        $UserSessionModel = new UserSessionModel();
         $dWhere = [
             "us_token" => $sessValue,
             "us_device" => $deviceInfo,
