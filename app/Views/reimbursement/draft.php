@@ -139,8 +139,10 @@ if (!$isValid) {
                                                             </p>
                                                             <p>
                                                                 <b>Diupload Pada:</b> <?= appFormatTanggalIndonesia($vBerkas["rb_created_at"]); ?><br>
-                                                                <button type="button" class="btn btn-danger btn-sm mt-2" onclick="doDelReimBerkas('<?= $vBerkas['rb_key']; ?>')">Hapus Berkas</button>
+                                                                <button type="button" class="btn btn-dark btn-sm mt-2" onclick="showPreviewReimBerkas('<?= $vBerkas['rb_key']; ?>')">Preview Berkas</button>
                                                                 <button type="button" class="btn btn-warning btn-sm mt-2" onclick="showEditReimBerkas('<?= $vBerkas['rb_key']; ?>')">Edit Berkas</button>
+                                                                <button type="button" class="btn btn-danger btn-sm mt-2" onclick="doDelReimBerkas('<?= $vBerkas['rb_key']; ?>')">Hapus Berkas</button>
+                                                                
                                                             </p>
                                                         </li>
                                                     <?php
@@ -212,4 +214,5 @@ if (!$isValid) {
 <?= appViewInjectScript("reimbursement", "berkas/do_delete_script"); ?>
 <?= appViewInjectScript("reimbursement", "berkas/show_upload_script"); ?>
 <?= appViewInjectScript("reimbursement", "berkas/show_edit_script"); ?>
+<?= appViewInjectScript("reimbursement", "berkas/show_preview_script"); ?>
 <?= $this->endSection(); ?>

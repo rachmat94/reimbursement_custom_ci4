@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Models\BerkasModel;
 use App\Models\UserModel;
 use Exception;
 
@@ -39,6 +40,32 @@ class File extends BaseController
             }
             $fPath = "";
             switch (strtolower($type)) {
+                case 'reimberkas':
+                    $rbKey = $this->request->getGet("rb_key") ?? "";
+                    $filename = $this->request->getGet("filename") ?? "";
+                    if (empty($rbKey) || empty($filename)) {
+                        throw new Exception("Required data not found.", 400);
+                    }
+                    $BerkasModel = new BerkasModel();
+
+                    $dReimBerkas = $BerkasModel->get([
+                        "rb_key" => $rbKey,
+                        "rb_file_name" => $filename,
+                    ], true);
+                    if (empty($dReimBerkas)) {
+                        throw new Exception("Data not found.", 400);
+                    }
+                    $reimTahun = $dReimBerkas["reim_triwulan_tahun"];
+                    $reimTriwulan = $dReimBerkas["reim_triwulan_no"];
+                    $claimantUGroupKey = $dReimBerkas["ucg_group_key"];
+
+                    $fPath = appConfigDataPath(
+                        "reimbursement/berkas/" . $reimTahun . "/" .
+                            "triwulan_" . $reimTriwulan . "/" .
+                            $claimantUGroupKey . "/" . $filename
+                    );
+                    break;
+
                 case 'user_photo':
                     $usrKey = $this->request->getGet("usr_key") ?? "";
                     $filename = $this->request->getGet("filename") ?? "";
@@ -54,7 +81,7 @@ class File extends BaseController
                     }
                     $fPath = appConfigDataPath("user/photo/" . $filename);
                     break;
-                
+
                 default:
                     # code...
                     break;

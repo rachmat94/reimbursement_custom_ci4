@@ -658,6 +658,59 @@ class Reimbursement extends BaseController
         }
     }
 
+
+    public function showPreviewBerkas()
+    {
+        try {
+            $dAccess = authVerifyAccess(false);
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+
+            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "admin_group") {
+                throw new Exception("Kamu tidak memiliki akses.", 400);
+            }
+
+            $rbKey = $this->request->getPost("rb_key");
+            if (empty($rbKey)) {
+                throw new Exception("Data yang diperlukan tidak ditemukan.", 400);
+            }
+            $dReimBerkas = $this->BerkasModel->get([
+                "rb_key" => $rbKey,
+            ], true);
+            if (empty($dReimBerkas)) {
+                throw new Exception("Data tidak ditemukan.", 400);
+            }
+            
+            $berkasFName = $dReimBerkas["rb_file_name"];
+            $reimTahun = $dReimBerkas["reim_triwulan_tahun"];
+            $reimTriwulan = $dReimBerkas["reim_triwulan_no"];
+            $claimantUGroupKey = $dReimBerkas["ucg_group_key"];
+
+            $dFile = appGetReimBerkas($rbKey,$berkasFName,$reimTahun,$reimTriwulan,$claimantUGroupKey);
+            $dView = [
+                "viewDir" => $this->viewDir,
+                "dReimBerkas" => $dReimBerkas,
+                "dFile" => $dFile,
+            ];
+            $redirect = $this->request->getUserAgent()->getReferrer();
+            $view = appViewInjectModal($this->viewDir, "berkas/preview_modal", $dView);
+            $script = appViewInjectScript($this->viewDir, "berkas/preview_script");
+            appJsonRespondSuccess(true, "Request done.", $redirect, $view, $script);
+            return;
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+
     public function doUploadBerkas()
     {
         try {

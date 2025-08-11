@@ -26,6 +26,58 @@ function appRenderBadgeUserRole($role = "")
     return $label;
 }
 
+function appGetReimBerkas($rbKey, $berkasFName, int $tahun, int $triwulan, $claimantUGroupKey)
+{
+    $berkasFUrl  = "";
+    $code        = "error";
+    $message     = "";
+    $fileMime    = "";
+    $fileCategory = "";
+    $berkasFPath = "";
+
+    if (!empty($berkasFName)) {
+        $berkasFPath = appConfigDataPath(
+            "reimbursement/berkas/" . $tahun . "/" . 
+            "triwulan_" . $triwulan . "/" . 
+            $claimantUGroupKey ."/". $berkasFName
+        );
+
+        if (file_exists($berkasFPath)) {
+            // Ambil MIME type asli file
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $fileMime = finfo_file($finfo, $berkasFPath);
+            finfo_close($finfo);
+
+            // Kategorikan file
+            if ($fileMime === 'application/pdf') {
+                $fileCategory = 'pdf';
+            } elseif (strpos($fileMime, 'image/') === 0) {
+                $fileCategory = 'image';
+            } else {
+                $fileCategory = 'other';
+            }
+
+            $code = "success";
+            $berkasFUrl = base_url('file/reimberkas?rb_key=' . $rbKey . '&filename=' . $berkasFName);
+        } else {
+            $message = "[ File not found ]";
+        }
+    } else {
+        $message = "[ empty ]";
+    }
+
+    return [
+        "code"         => $code,
+        "message"      => $message,
+        "file_mime"    => $fileMime,
+        "file_category"=> $fileCategory,
+        "file_name"    => $berkasFName,
+        "file_path"    => $berkasFPath,
+        "file_url"     => $berkasFUrl,
+    ];
+}
+
+
 function appGetUserPhoto($usrKey = "", $photoFName = "")
 {
     $photoFPath = "";
@@ -632,7 +684,7 @@ function appGetQuarterMonths(int $quarter): ?array
 
 function appFormatTanggalIndonesia($date, bool $withDay = false): ?string
 {
-    if(empty($date)){
+    if (empty($date)) {
         return "";
     }
     if (!$date || !strtotime($date)) {
