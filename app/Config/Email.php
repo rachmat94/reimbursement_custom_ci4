@@ -6,8 +6,8 @@ use CodeIgniter\Config\BaseConfig;
 
 class Email extends BaseConfig
 {
-    public string $fromEmail  = 'm.rachmat.riadi@gmail.com';
-    public string $fromName   = 'SIMPeg25';
+    public string $fromEmail  = '';
+    public string $fromName   = '';
     public string $recipients = '';
 
     /**
@@ -33,7 +33,7 @@ class Email extends BaseConfig
     /**
      * SMTP Username
      */
-    public string $SMTPUser = 'm.rachmat.riadi@gmail.com';
+    public string $SMTPUser = '';
 
     /**
      * SMTP Password
@@ -67,7 +67,7 @@ class Email extends BaseConfig
 * 4. Gunakan App Password di Konfigurasi SMTP
 * Gunakan App Password sebagai pengganti email password biasa:
      */
-    public string $SMTPPass = 'ckbdpsubphapbsqd';
+    public string $SMTPPass = '';
 
     /**
      * SMTP Port
