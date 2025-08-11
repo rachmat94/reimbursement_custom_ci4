@@ -142,8 +142,13 @@ class Reimbursement extends BaseController
                 ]);
             }
             $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
             $sessGroupId = $dAccess["data"]["group_id"];
             $sessGroupName = $dAccess["data"]["group_name"];
+
+            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "admin_group") {
+                throw new Exception("Anda tida punya akses.", 400);
+            }
 
             $userId = $this->request->getPost("hdn_user_id") ?? null;
             $subScheduleId = $this->request->getPost("hdn_subschedule_id") ?? null;
@@ -163,12 +168,12 @@ class Reimbursement extends BaseController
             if (empty($dUser)) {
                 throw new Exception("User yang dipilih tidak ada.", 400);
             }
-            if (!empty($sessGroupId)) {
-                if ($sessGroupId != $dUser["usr_group_id"]) {
-                    throw new Exception("Anda hanya boleh mengisi untuk group " . $sessGroupName, 400);
-                }
-            } else {
-                if ($sessUsrId != authMasterUserId()) {
+            if ($sessUsrId != authMasterUserId()) {
+                if (!empty($sessGroupId)) {
+                    if ($sessGroupId != $dUser["usr_group_id"]) {
+                        throw new Exception("Anda hanya boleh mengisi untuk group " . $sessGroupName, 400);
+                    }
+                } else {
                     throw new Exception("Akun anda tidak memiliki Group ", 400);
                 }
             }
@@ -357,7 +362,7 @@ class Reimbursement extends BaseController
                     ]); // atau rollback lainnya
                     throw new Exception("Pengajuan gagal disimpan karena ada berkas yang tidak valid.", 400);
                 } else {
-                    if((getenv("demo"))){
+                    if ((getenv("demo"))) {
                         FileLimiter::limitFiles(appConfigDataPath("reimbursement/berkas"), 100);
                     }
                     if ($status == "diajukan") {
