@@ -231,4 +231,5 @@ if (!$isValid) {
 <?= appViewInjectScript("reimbursement", "submit_save_draft_script"); ?>
 <?= appViewInjectScript("reimbursement", "berkas/do_delete_script"); ?>
 <?= appViewInjectScript("reimbursement", "berkas/show_upload_script"); ?>
+<?= appViewInjectScript("reimbursement", "berkas/show_edit_script"); ?>
 <?= $this->endSection(); ?>

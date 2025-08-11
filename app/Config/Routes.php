@@ -124,6 +124,8 @@ $routes->group("reimbursement", static function ($routes) {
     $routes->post("do_delete_berkas", "Reimbursement::doDeleteBerkas");
     $routes->post("show_upload_berkas", "Reimbursement::showUploadBerkas");
     $routes->post("do_upload_berkas", "Reimbursement::doUploadBerkas");
+    $routes->post("show_edit_berkas", "Reimbursement::showEditBerkas");
+    $routes->post("do_edit_berkas", "Reimbursement::doEditBerkas");
     // $routes->post("show_add", "Reimbursement::showAdd");
     // $routes->post("dtbl_main", "Reimbursement::dtblMain");
     // $routes->post("show_preview", "Reimbursement::showPreview");

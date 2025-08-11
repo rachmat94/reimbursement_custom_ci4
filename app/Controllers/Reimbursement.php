@@ -563,6 +563,99 @@ class Reimbursement extends BaseController
         }
     }
 
+    public function doEditBerkas()
+    {
+        try {
+            $dAccess = authVerifyAccess(false, "u_reimbursement");
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+
+            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "admin_group") {
+                throw new Exception("Kamu tidak memiliki akses.", 400);
+            }
+
+            $rbKey = $this->request->getPost("hdn_rb_key");
+            $rbNote = $this->request->getPost("txt_note") ?? "";
+            if (empty($rbKey)) {
+                throw new Exception("Data yang diperlukan tidak ditemukan.", 400);
+            }
+            $dReimBerkas = $this->BerkasModel->get([
+                "rb_key" => $rbKey,
+            ], true);
+            if (empty($dReimBerkas)) {
+                throw new Exception("Data tidak ditemukan.", 400);
+            }
+            $dEdit = [
+                "rb_note" => $rbNote,
+                "rb_updated_at" => appCurrentDateTime(),
+            ];
+            if ($this->BerkasModel->edit($dEdit, [
+                "rb_id" => $dReimBerkas["rb_id"],
+            ])) {
+                $redirect = $this->request->getUserAgent()->getReferrer();
+                appJsonRespondSuccess(true, "Berhasil disimpan.", $redirect);
+                return;
+            } else {
+                throw new Exception("Gagal menyimpan data.", 400);
+            }
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+
+    public function showEditBerkas()
+    {
+        try {
+            $dAccess = authVerifyAccess(false, "u_reimbursement");
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+
+            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "admin_group") {
+                throw new Exception("Kamu tidak memiliki akses.", 400);
+            }
+
+            $rbKey = $this->request->getPost("rb_key");
+            if (empty($rbKey)) {
+                throw new Exception("Data yang diperlukan tidak ditemukan.", 400);
+            }
+            $dReimBerkas = $this->BerkasModel->get([
+                "rb_key" => $rbKey,
+            ], true);
+            if (empty($dReimBerkas)) {
+                throw new Exception("Data tidak ditemukan.", 400);
+            }
+            $dView = [
+                "viewDir" => $this->viewDir,
+                "dReimBerkas" => $dReimBerkas,
+            ];
+            $redirect = $this->request->getUserAgent()->getReferrer();
+            $view = appViewInjectModal($this->viewDir, "berkas/edit_modal", $dView);
+            $script = appViewInjectScript($this->viewDir, "berkas/submit_edit_script");
+            appJsonRespondSuccess(true, "Request done.", $redirect, $view, $script);
+            return;
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+
     public function doUploadBerkas()
     {
         try {

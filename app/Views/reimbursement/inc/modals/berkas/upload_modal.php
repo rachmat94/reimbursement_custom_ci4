@@ -30,7 +30,7 @@
                             "value" => ($dJenisBerkas['jb_is_required'] == 1) ? "Wajib" : "Tidak Wajib",
                         ],
                         [
-                            "name" => "File",
+                            "name" => "Tipe File",
                             "value" => "File Pdf atau gambar<br> Makimal: " .  $dJenisBerkas["jb_max_file_size_mb"] . " Mb",
                         ],
                     ]); ?>
