@@ -526,7 +526,6 @@ class Group extends BaseController
                 $dGUserReim[] = $vGUser;
             }
 
-
             $this->cData["dSubSchedule"] = $dSubSchedule;
             $this->cData["dGroupUsers"] = $dGUserReim;
             $this->cData["dGroup"] = $dGroup;

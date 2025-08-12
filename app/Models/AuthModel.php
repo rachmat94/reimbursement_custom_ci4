@@ -62,6 +62,36 @@ class AuthModel extends Model
                 "u_user" => ["super_user"],
                 "d_user" => ["super_user"],
 
+                "r_group" => ["super_user", "admin_group", "admin_validator"],
+                "c_group" => ["super_user"],
+                "u_group" => ["super_user"],
+                "d_group" => ["super_user"],
+
+                "r_group_user" => ["super_user", "admin_group", "admin_validator"],
+                "c_group_user" => ["super_user"],
+                "u_group_user" => ["super_user"],
+                "d_group_user" => ["super_user"],
+
+                "r_category" => ["super_user", "admin_group", "admin_validator"],
+                "c_category" => ["super_user"],
+                "u_category" => ["super_user"],
+                "d_category" => ["super_user"],
+
+                "r_jenis_berkas" => ["super_user", "admin_group", "admin_validator"],
+                "c_jenis_berkas" => ["super_user"],
+                "u_jenis_berkas" => ["super_user"],
+                "d_jenis_berkas" => ["super_user"],
+
+                "r_subschedule" => ["super_user", "admin_group", "admin_validator"],
+                "c_subschedule" => ["super_user"],
+                "u_subschedule" => ["super_user"],
+                "d_subschedule" => ["super_user"],
+
+                "r_reim" => ["super_user", "admin_group", "admin_validator","user"],
+                "c_reim" => ["super_user", "admin_group",],
+                "u_reim" => ["super_user", "admin_group"],
+                "d_reim" => ["super_user", "admin_group"],
+
             ];
             if (!empty($accessResource)) {
                 if (array_key_exists($accessResource, $list)) {
