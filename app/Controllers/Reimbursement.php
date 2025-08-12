@@ -7,6 +7,7 @@ use App\Models\BerkasModel;
 use App\Models\CategoryModel;
 use App\Models\JenisBerkasModel;
 use App\Models\ReimbursementModel;
+use App\Models\RevisionModel;
 use App\Models\SubmissionWindowModel;
 use App\Models\UserModel;
 use Exception;
@@ -26,6 +27,7 @@ class Reimbursement extends BaseController
     private $ReimbursementModel;
     private $CategoryModel;
     private $BerkasModel;
+    private $RevisionModel;
 
     public function __construct()
     {
@@ -43,6 +45,7 @@ class Reimbursement extends BaseController
         $this->ReimbursementModel = new ReimbursementModel();
         $this->CategoryModel = new CategoryModel();
         $this->BerkasModel = new BerkasModel();
+        $this->RevisionModel = new RevisionModel();
     }
 
     public function doSelectUser()
@@ -565,6 +568,229 @@ class Reimbursement extends BaseController
         }
     }
 
+    /**
+     * =================================================
+     * VALIDASI
+     * =================================================
+     */
+
+    public function doAsRevision()
+    {
+        $this->_onlyPostandAjax();
+        $redirect = $this->request->getUserAgent()->getReferrer();
+        try {
+            $dAccess = authVerifyAccess(true);
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+
+            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "validator") {
+                throw new Exception("Kamu tidak memiliki akses.", 400);
+            }
+
+            $reimId = $this->request->getPost("hdn_reim_id");
+            $reimKey = $this->request->getPost("hdn_reim_key");
+            $note = $this->request->getPost("txt_revision_note");
+            $btnAction = $this->request->getPost("btn_action");
+
+            if (empty($reimId) || empty($reimKey)) {
+                throw new Exception("Data yang dibutuhkan tidak ada.", 400);
+            }
+
+            if (empty($note)) {
+                throw new Exception("Detail Revisi harus diisi.", 400);
+            }
+            if (!in_array($btnAction, ["save", "as_revision"])) {
+                throw new Exception("Invalid action", 400);
+            }
+
+            $dRevision = $this->RevisionModel->get([
+                "rrev_reim_id" => $reimId,
+            ], true);
+            if ($dRevision) {
+                $dEdit = [
+                    "rrev_note" => $note,
+                    "rrev_updated_at" => appCurrentDateTime(),
+                ];
+                if ($this->RevisionModel->edit($dEdit, [
+                    "rrev_id" => $dRevision["rrev_id"],
+                ])) {
+                    if ($btnAction == "as_revision") {
+                        if ($this->ReimbursementModel->edit([
+                            "reim_status" => "revisi",
+                            "reim_updated_at" => appCurrentDateTime(),
+                        ], [
+                            "reim_id" => $reimId,
+                        ])) {
+                            $redirect = base_url("reimbursement/view?reim_key=" . $reimKey);
+                        } else {
+                            log_message("alert", "Gagal update status reimbursement ke revisi." . $reimId);
+                        }
+                    }
+                    appJsonRespondSuccess(true, "Perubahan berhasil disimpan", $redirect);
+                    return;
+                } else {
+                    throw new Exception("Perubahan gagal disimpan.", 400);
+                }
+            } else {
+                $key = $this->RevisionModel->generateKey();
+                $dAdd = [
+                    "rrev_key" => $key,
+                    "rrev_by_usr_id" => $sessUsrId,
+                    "rrev_reim_id" => $reimId,
+                    "rrev_note" => $note,
+                    "rrev_created_at" => appCurrentDateTime(),
+                ];
+                if ($this->RevisionModel->add($dAdd)) {
+                    if ($btnAction == "as_revision") {
+                        if ($this->ReimbursementModel->edit([
+                            "reim_status" => "revisi",
+                            "reim_updated_at" => appCurrentDateTime(),
+                        ], [
+                            "reim_id" => $reimId,
+                        ])) {
+                            $redirect = base_url("reimbursement/view?reim_key=" . $reimKey);
+                        } else {
+                            log_message("alert", "Gagal update status reimbursement ke revisi." . $reimId);
+                        }
+                    }
+                    appJsonRespondSuccess(true, "Perubahan berhasil disimpan", $redirect);
+                    return;
+                } else {
+                    throw new Exception("Perubahan gagal disimpan.", 400);
+                }
+            }
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+
+    public function validation()
+    {
+        try {
+            $dAccess = authVerifyAccess(true);
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+
+            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "validator") {
+                throw new Exception("Kamu tidak memiliki akses.", 400);
+            }
+            $this->cData["dAccess"] = $dAccess;
+
+            $reimKey = $this->request->getGet("reim_key") ?? "";
+            if (empty($reimKey)) {
+                return redirect()->to(base_url("reimbursement"))->with("alert", [
+                    "code" => "danger",
+                    "message" => "Data yang dibutuhkan tidak ada.",
+                ]);
+            }
+            $dReimbursement = $this->ReimbursementModel->get([
+                "reim_key" => $reimKey,
+            ], true);
+            if (empty($dReimbursement)) {
+                return redirect()->to(base_url("reimbursement"))->with("alert", [
+                    "code" => "danger",
+                    "message" => "Data tidak ditemukan",
+                ]);
+            }
+            $reimId = $dReimbursement["reim_id"];
+            $currentStatus = $dReimbursement["reim_status"];
+            if ($currentStatus != "validasi") {
+                throw new Exception("Status bukan [ validasi ] " . masterReimbursementStatus($currentStatus)["label"], 400);
+            }
+            $dReimBerkas = $this->BerkasModel->get([
+                "rb_reim_id" => $reimId,
+            ]);
+            $dRevision = $this->RevisionModel->get([
+                "rrev_reim_id" => $reimId,
+            ], true);
+            $this->cData["dRevision"] = $dRevision;
+            $this->cData["dReimBerkas"] = $dReimBerkas;
+            $this->cData["dReimbursement"] = $dReimbursement;
+            return view($this->viewDir . "/validation", $this->cData);
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+
+    public function doStartValidate()
+    {
+        $this->_onlyPostandAjax();
+        $redirect = $this->request->getUserAgent()->getReferrer();
+        try {
+            $dAccess = authVerifyAccess(false, "u_reimbursement");
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+
+            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "validator") {
+                throw new Exception("Kamu tidak memiliki akses.", 400);
+            }
+
+            $reimKey = $this->request->getPost("reim_key");
+            if (empty($reimKey)) {
+                throw new Exception("Data yang dibutuhkan tidak ada.", 400);
+            }
+            $dReimbursement = $this->ReimbursementModel->get([
+                "reim_key" => $reimKey,
+            ], true);
+            if (empty($dReimbursement)) {
+                throw new Exception("Data tidak ditemukan.", 400);
+            }
+            $currentStatus  = $dReimbursement["reim_status"];
+            if ($currentStatus == "validasi") {
+                throw new Exception("Data sudah berstatus validasi (" . masterReimbursementStatus($currentStatus)["label"], 400);
+            }
+            if (!in_array($dReimbursement["reim_status"], ["draft", "diajukan"])) {
+                throw new Exception("Status tidak valid.", 400);
+            }
+            $dEdit = [
+                "reim_status" => "validasi",
+                "reim_validation_start_at" => appCurrentDateTime(),
+                "reim_validation_by_usr_id" => $sessUsrId,
+                "reim_updated_at" => appCurrentDateTime(),
+            ];
+            if ($this->ReimbursementModel->edit($dEdit, [
+                "reim_id" => $dReimbursement["reim_id"]
+            ])) {
+                $redirect = base_url("reimbursement/validation?reim_key=" . $reimKey);
+                appJsonRespondSuccess(true, "Perubahan berhasil disimpan.", $redirect);
+                return;
+            } else {
+                throw new Exception("Gagal menyimpan perubahan.", 400);
+            }
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+
+    // END VALIDASI ====================================
+
     public function doEditBerkas()
     {
         try {
@@ -1047,6 +1273,8 @@ class Reimbursement extends BaseController
             ];
             if ($btnAction == "save_ajukan") {
                 $dEdit["reim_status"] = "diajukan";
+                $dEdit["reim_diajukan_pada"] = appCurrentDateTime();
+                $dEdit["reim_diajukan_by_usr_id"] = $sessUsrId;
                 $redirect = base_url("reimbursement/view?reim_key=" . $reimKey);
             } else {
                 $redirect = base_url("reimbursement/draft?reim_key=" . $reimKey);
@@ -1055,7 +1283,6 @@ class Reimbursement extends BaseController
                 "reim_id" => $reimId,
             ])) {
                 log_message("alert", "simpan perubahan draft berhasil.");
-
                 appJsonRespondSuccess(true, "Simpan perubahan berhasil.", $redirect);
                 return;
             } else {

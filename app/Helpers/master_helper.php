@@ -81,9 +81,9 @@ function masterReimbursementStatus($type = "", bool $forceSingle = false)
             "color" => "primary",
             "description" => "",
         ],
-        "verifikasi" => [
-            "code" => "verifikasi",
-            "label" => "Diverifikasi",
+        "validasi" => [
+            "code" => "validasi",
+            "label" => "Proses Validasi",
             "color" => "info",
             "description" => "",
         ],
@@ -208,8 +208,8 @@ function masterUserRole($type = "", bool $forceSingle = false)
             "color" => "dark",
             "description" => "",
         ],
-        "admin_validator" => [
-            "code" => "admin_validator",
+        "validator" => [
+            "code" => "validator",
             "label" => "Admin Validasi",
             "color" => "warning",
             "description" => "",

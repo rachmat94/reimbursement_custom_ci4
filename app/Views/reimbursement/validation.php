@@ -1,6 +1,7 @@
 <?= $this->extend(appViewLayoutFile()) ?>
 
 <?= $this->section("head"); ?>
+<link rel="stylesheet" href="<?= assetUrl(); ?>plugins/summernote/summernote-bs4.min.css">
 <?= $this->endSection(); ?>
 
 <?= $this->section('header'); ?>
@@ -102,29 +103,26 @@
 </div>
 <div class="row mt-3">
     <div class="col-12">
-        <?php
-        if (
-            $dReimbursement["reim_status"] == "draft"
-        ) {
-        ?>
-            <a href="<?= base_url('reimbursement/draft?reim_key=' . $dReimbursement['reim_key']); ?>" class="btn btn-warning" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i> Ubah</a>
-            <?php
-        } else if (
-            $dReimbursement["reim_status"] == "diajukan"
-        ) {
-            if ($dAccess["data"]["usr_role"] == "admin_validator" || $dAccess["data"]["usr_id"] == authMasterUserId()) {
-            ?>
-                <div class="card bg-warning">
-                    <div class="card-body ">
-                        <h5>Validasi:</h5>
-                        <button class="btn btn-dark " onclick="doStartValidate('<?= $dReimbursement['reim_key']; ?>')">Saya akan memulai validasi data ini</button>
+        <h4 class="mb-3">Hasil Akhir Pengecekan:</h4>
+    </div>
+    <div class="col-lg-12">
+        <div class="card bg-warning">
+            <div class="card-body ">
+                <form autocomplete="off" method="post" action="<?= base_url('reimbursement/do_as_revision'); ?>" id="as_revision_reimbursement_form" enctype="multipart/form-data">
+                    <h5>Revisi:</h5>
+                    <div class="form-group">
+                        <label for="txt_revision_note">Detail Revisi</label>
+                        <textarea name="txt_revision_note" id="txt_revision_note" class="form-control"><?= $dRevision['rrev_note'] ?? ""; ?></textarea>
                     </div>
-                </div>
-        <?php
-            }
-        }
-        ?>
+                    <input type="hidden" name="hdn_reim_id" value="<?= $dReimbursement['reim_id']; ?>">
+                    <input type="hidden" name="hdn_reim_key" value="<?= $dReimbursement["reim_key"]; ?>">
 
+                    <input type="hidden" name="btn_action" id="btn_action">
+                    <button class="btn btn-primary " type="submit" onclick="$('#btn_action').val('save')"><i class="fas fa-save"></i> Simpan perubahan detail revisi</button>
+                    <button class="btn btn-dark " type="submit" onclick="$('#btn_action').val('as_revision')"> Jadikan harus direvisi</button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 <?= $this->endSection(); ?>
@@ -137,9 +135,30 @@
 
 <?= $this->endSection(); ?>
 <?= $this->section("script_0"); ?>
-
+<script src="<?= assetUrl(); ?>plugins/summernote/summernote-bs4.min.js"></script>
 <?= $this->endSection(); ?>
 <?= $this->section("script_1"); ?>
 <?= appViewInjectScript("reimbursement", "berkas/show_preview_script"); ?>
 <?= appViewInjectScript("reimbursement", "do_start_validate_script"); ?>
+<?= appViewInjectScript("reimbursement", "submit_as_revision_script"); ?>
+<script>
+    $(function() {
+        $('#txt_revision_note').summernote({
+            height: 200,
+            toolbar: [
+                // ['group name', [list of buttons]]
+                ['style', ['bold', 'italic', 'underline', 'clear']],
+                ['font', ['strikethrough', 'superscript', 'subscript']],
+                ['fontsize', ['fontsize']],
+                ['color', ['color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['height', ['height']],
+                ['table', ['table']],
+                ['insert', ['link']],
+                ['view', ['fullscreen', 'codeview', 'help']]
+                // Tidak ada 'insert' => menghilangkan tombol gambar, video, dll
+            ]
+        })
+    })
+</script>
 <?= $this->endSection(); ?>
