@@ -120,8 +120,19 @@
                         <button class="btn btn-dark " onclick="doStartValidate('<?= $dReimbursement['reim_key']; ?>')">Saya akan memulai validasi data ini</button>
                     </div>
                 </div>
-        <?php
+            <?php
             }
+        } else if ($dReimbursement["reim_status"] == "revisi") {
+            ?>
+            <div class="card bg-warning">
+                <div class="card-body ">
+                    <h5>Pengajuan ini perlu direvisi:</h5>
+                    
+                    <a href="<?= base_url('reimbursement/revision?reim_key=' . $dReimbursement['reim_key']); ?>" class="btn btn-dark"><i class="fas fa-edit"></i> Lihat</a>
+                </div>
+            </div>
+
+        <?php
         }
         ?>
 

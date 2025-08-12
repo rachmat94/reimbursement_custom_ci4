@@ -570,6 +570,245 @@ class Reimbursement extends BaseController
 
     /**
      * =================================================
+     * REVISI
+     * =================================================
+     */
+
+    public function doSaveRevision()
+    {
+        try {
+            $dAccess = authVerifyAccess(false);
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+
+            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "admin_group") {
+                throw new Exception("Kamu tidak memiliki akses.", 400);
+            }
+
+            $reimId = $this->request->getPost("hdn_reim_id");
+            $reimKey = $this->request->getPost("hdn_reim_key");
+            $categoryId = $this->request->getPost("cbo_category");
+            $nominal = $this->request->getPost("nbr_nominal");
+            $detail = $this->request->getPost("txt_detail");
+            $btnAction = $this->request->getPost("btn_action");
+
+            log_message("alert", "action=" . json_encode($btnAction));
+
+            if (empty($reimId)) {
+                throw new Exception("Reim Id not found.", 400);
+            }
+            if (empty($reimKey)) {
+                throw new Exception("Reim key not found.", 400);
+            }
+            if (!in_array($btnAction, ["save_revision", "save_ajukan"])) {
+                throw new Exception("Invalid action.", 400);
+            }
+
+            $dReimbursement = $this->ReimbursementModel->get([
+                "reim_id" => $reimId,
+                "reim_key" => $reimKey,
+            ], true);
+            if (empty($dReimbursement)) {
+                throw new Exception("Data tidak ditemukan.", 404);
+            }
+            if ($dReimbursement["reim_status"] != "revisi") {
+                throw new Exception("Gagal menyimpan perubahan karena status sudah bukan revisi.", 400);
+            }
+            $reimTriwulanTahun = $dReimbursement["reim_triwulan_tahun"];
+            $reimTriwulan = $dReimbursement["reim_triwulan_no"];
+            $reimClaimantUsrId = $dReimbursement["reim_claimant_usr_id"];
+            $dUser = $this->UserModel->get([
+                "usr_id" => $reimClaimantUsrId,
+            ], true);
+            if (empty($dUser)) {
+                throw new Exception("Data tidak valid.[ref:user claimant not found]", 400);
+            }
+            $reimClaimantUsrKey = $dUser["usr_key"];
+            $dCategory = $this->CategoryModel->get([
+                "cat_id" => $categoryId,
+            ], true);
+            if (empty($dCategory)) {
+                throw new Exception("Data category tidak ada.", 404);
+            }
+            $dEdit = [
+                "reim_cat_id" => $categoryId,
+                "reim_amount" => $nominal,
+                "reim_detail" => $detail,
+                "reim_updated_at" => appCurrentDateTime(),
+            ];
+            if ($btnAction == "save_ajukan") {
+                $dEdit["reim_status"] = "diajukan";
+                $redirect = base_url("reimbursement/view?reim_key=" . $reimKey);
+            } else {
+                $redirect = base_url("reimbursement/revision?reim_key=" . $reimKey);
+            }
+            if ($this->ReimbursementModel->edit($dEdit, [
+                "reim_id" => $reimId,
+            ])) {
+                log_message("alert", "simpan perubahan revisi berhasil.");
+                appJsonRespondSuccess(true, "Simpan perubahan berhasil.", $redirect);
+                return;
+            } else {
+                throw new Exception("Gagal menyimpan perubahan.", 400);
+            }
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+
+    public function revision()
+    {
+        try {
+            $dAccess = authVerifyAccess(true);
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+
+            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "admin_group") {
+                throw new Exception("Kamu tidak memiliki akses.", 400);
+            }
+
+            $this->cData["dAccess"] = $dAccess;
+
+            $reimKey = $this->request->getGet("reim_key") ?? "";
+            if (empty($reimKey)) {
+                return redirect()->to(base_url("reimbursement"))->with("alert", [
+                    "code" => "danger",
+                    "message" => "Data yang dibutuhkan tidak ada.",
+                ]);
+            }
+            $dReimbursement = $this->ReimbursementModel->get([
+                "reim_key" => $reimKey,
+            ], true);
+            if (empty($dReimbursement)) {
+                return redirect()->to(base_url("reimbursement"))->with("alert", [
+                    "code" => "danger",
+                    "message" => "Data tidak ditemukan",
+                ]);
+            }
+            $reimId = $dReimbursement["reim_id"];
+            $currentStatus = $dReimbursement["reim_status"];
+            $claimantUserId = $dReimbursement["reim_claimant_usr_id"];
+            $claimantUserGroupId = $dReimbursement["ucg_group_id"];
+
+            if ($currentStatus != "revisi") {
+                throw new Exception("Status bukan revisi", 400);
+            }
+
+            if ($sessUsrId != authMasterUserId() && $claimantUserGroupId != $sessGroupId) {
+                throw new Exception("Anda tidak punya akses.", 400);
+            }
+
+            $dUser = null;
+            $vUSelected = "";
+            $isValid = true;
+            $message = "";
+            if (!empty($claimantUserId)) {
+                $dUser = $this->UserModel->get([
+                    "usr_id" => $claimantUserId,
+                ], true);
+                if (!empty($dUser)) {
+                    $usrCode = $dUser["usr_code"];
+                    $usrUsername = $dUser["usr_username"];
+                    $usrEmail = $dUser["usr_email"];
+                    $usrRole = $dUser["usr_role"];
+                    $usrGroup = $dUser["group_name"];
+                    $usrCategory = masterUserCategoryInGroup($dUser["usr_group_category"])["label"];
+
+                    $vUSelected = <<<VIEW
+                    <div class="p-2">
+                        <dl>
+                            <dt>[ {$usrCode} ] @{$usrUsername} {$usrEmail}</dt>
+                            <dd>Role: {$usrRole} | Group: {$usrGroup} | Kategori User: {$usrCategory}</dd>
+                        </dl>
+                    </div>
+                    <input type="hidden" name="hdn_user_id" value="{$claimantUserId}">
+                    VIEW;
+                }
+            }
+
+            $dReimBerkas = $this->BerkasModel->get([
+                "rb_reim_id" => $reimId,
+            ]);
+
+            $dJenisBerkas = $this->JenisBerkasModel->get([
+                "jb_is_active" => 1,
+            ]);
+            if (empty($dJenisBerkas)) {
+                $isValid = false;
+                $message = "Data Jenis Berkas tidak ada.";
+                return $this->_returnCreateInvalid($message);
+            }
+            $inJB = [];
+            $outJB = [];
+
+            $jbIds = array_column($dJenisBerkas, 'jb_id');
+
+            foreach ($dReimBerkas as $vRB) {
+                if (in_array($vRB["rb_jb_id"], $jbIds)) {
+                    $inJB[] = $vRB;
+                } else {
+                    $outJB[] = $vRB;
+                }
+            }
+
+            // Kelompokkan ReimBerkas berdasarkan jb_id
+            $mapReim = [];
+            foreach ($dReimBerkas as $vRB) {
+                $mapReim[$vRB["rb_jb_id"]][] = $vRB;
+            }
+
+            // Gabungkan ke data JenisBerkas
+            foreach ($dJenisBerkas as &$vJB) {
+                $jb_id = $vJB["jb_id"];
+                $vJB["dReimBerkas"] = $mapReim[$jb_id] ?? [];
+            }
+            unset($vJB);
+
+            $this->cData["dCategories"] = $this->CategoryModel->get([
+                "cat_is_active" => 1,
+            ]);
+
+            $dRevision = $this->RevisionModel->get([
+                "rrev_reim_id" => $reimId,
+            ], true);
+            $this->cData["dRevision"] = $dRevision;
+            $this->cData["inJB"] = $inJB;
+            $this->cData["outJB"] = $outJB;
+            $this->cData["dReimBerkas"] = $dReimBerkas;
+            $this->cData["dReimbursement"] = $dReimbursement;
+            $this->cData["vUSelected"] = $vUSelected;
+            // $this->cData["isLocked"] = $dSubmissionSchedule["sw_is_locked"];
+            $this->cData["isValid"] = $isValid;
+            $this->cData["message"] = $message;
+            // $this->cData["dSubmissionSchedule"] = $dSubmissionSchedule;
+            $this->cData["dJenisBerkas"] = $dJenisBerkas;
+            return view($this->viewDir . "/revision", $this->cData);
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+
+    // END REVISI ======================================
+    /**
+     * =================================================
      * VALIDASI
      * =================================================
      */
@@ -684,6 +923,7 @@ class Reimbursement extends BaseController
                     if ($btnAction == "as_revision") {
                         if ($this->ReimbursementModel->edit([
                             "reim_status" => "revisi",
+                            "reim_ever_revised_at" => appCurrentDateTime(),
                             "reim_updated_at" => appCurrentDateTime(),
                         ], [
                             "reim_id" => $reimId,
@@ -711,6 +951,7 @@ class Reimbursement extends BaseController
                     if ($btnAction == "as_revision") {
                         if ($this->ReimbursementModel->edit([
                             "reim_status" => "revisi",
+                            "reim_ever_revised_at" => appCurrentDateTime(),
                             "reim_updated_at" => appCurrentDateTime(),
                         ], [
                             "reim_id" => $reimId,
@@ -1352,6 +1593,7 @@ class Reimbursement extends BaseController
             return $this->sendResponse($th->getCode(), $th->getMessage());
         }
     }
+
     public function draft()
     {
         try {
