@@ -216,7 +216,7 @@ class GroupModel extends Model
         $query = $single ? $builder->get(1)->getRowArray() : $builder->get()->getResultArray();
 
         // Log query untuk debug
-        log_message("error", "get group: " . $this->db->getLastQuery());
+        // log_message("error", "get group: " . $this->db->getLastQuery());
 
         return $query;
     }

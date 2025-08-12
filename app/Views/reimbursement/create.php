@@ -144,7 +144,9 @@ if (!$isValid) {
                                 </select>
                             </div>
                             <div class="col-sm-4">
-                                <button type="submit" class="btn btn-outline-dark btn-sm">Lanjutkan</button>
+                                <button type="submit" class="btn btn-dark btn-sm">Lanjutkan</button>
+
+                                <a href="<?=base_url('reimbursement');?>" class="btn btn-danger btn-sm">Batalkan</a>
                             </div>
                         </div>
                     </div>

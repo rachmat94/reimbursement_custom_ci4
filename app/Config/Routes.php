@@ -133,6 +133,7 @@ $routes->group("reimbursement", static function ($routes) {
     $routes->post("do_as_accepted","Reimbursement::doAsAccepted");
     $routes->get("revision","Reimbursement::revision");
     $routes->post("do_save_revision","Reimbursement::doSaveRevision");
+    $routes->get("print","Reimbursement::print");
     // $routes->post("show_add", "Reimbursement::showAdd");
     // $routes->post("dtbl_main", "Reimbursement::dtblMain");
     // $routes->post("show_preview", "Reimbursement::showPreview");

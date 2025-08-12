@@ -126,6 +126,19 @@
                 </div>
             <?php
             }
+        } else if (
+            $dReimbursement["reim_status"] == "validasi"
+        ) {
+            if ($dAccess["data"]["usr_role"] == "admin_validator" || $dAccess["data"]["usr_id"] == authMasterUserId()) {
+            ?>
+                <div class="card bg-warning">
+                    <div class="card-body ">
+                        <h5>Validasi:</h5>
+                        <a href="<?= base_url('reimbursement/validation?reim_key=' . $dReimbursement['reim_key']); ?>" class="btn btn-dark"><i class="fas fa-edit"></i> Lanjutkan</a>
+                    </div>
+                </div>
+            <?php
+            }
         } else if ($dReimbursement["reim_status"] == "revisi") {
             ?>
             <div class="card bg-warning">
@@ -136,6 +149,16 @@
                 </div>
             </div>
 
+        <?php
+        } else if (in_array($dReimbursement["reim_status"], ["disetujui"])) {
+        ?>
+            <div class="card bg-success">
+                <div class="card-body ">
+                    <h5>Pengajuan ini disetujui:</h5>
+                    <p></p>
+                    <a href="<?= base_url('reimbursement/print?reim_key=' . $dReimbursement['reim_key']); ?>&pdf=1" class="btn btn-danger" target="_blank"><i class="fas fa-file-pdf"></i> Download / Print</a>
+                </div>
+            </div>
         <?php
         }
         ?>

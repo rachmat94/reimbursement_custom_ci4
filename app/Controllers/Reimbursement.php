@@ -11,6 +11,9 @@ use App\Models\RevisionModel;
 use App\Models\SubmissionWindowModel;
 use App\Models\UserModel;
 use Exception;
+use Spipu\Html2Pdf\Exception\ExceptionFormatter;
+use Spipu\Html2Pdf\Exception\Html2PdfException;
+use Spipu\Html2Pdf\Html2Pdf;
 
 class Reimbursement extends BaseController
 {
@@ -461,9 +464,9 @@ class Reimbursement extends BaseController
                     $usrCode = $dUser["usr_code"];
                     $usrUsername = $dUser["usr_username"];
                     $usrEmail = $dUser["usr_email"];
-                    $usrRole = $dUser["usr_role"];
+                    $usrRole = (!empty($dUser["usr_role"])) ? masterUserRole($dUser["usr_role"], true)["label"] : "-";
                     $usrGroup = $dUser["group_name"];
-                    $usrCategory = masterUserCategoryInGroup($dUser["usr_group_category"])["label"];
+                    $usrCategory = (!empty($dUser["usr_group_category"])) ? masterUserCategoryInGroup($dUser["usr_group_category"], true)["label"] : "-";
 
                     $vUSelected = <<<VIEW
                     <div class="p-2">
@@ -565,6 +568,83 @@ class Reimbursement extends BaseController
         } catch (\Throwable $th) {
             appSaveThrowable($th);
             return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+
+    public function print()
+    {
+        try {
+            $dAccess = authVerifyAccess(true);
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $this->cData["dAccess"] = $dAccess;
+            $reimKey = $this->request->getGet("reim_key") ?? "";
+            if (empty($reimKey)) {
+                return redirect()->to(base_url("reimbursement"))->with("alert", [
+                    "code" => "danger",
+                    "message" => "Data yang dibutuhkan tidak ada.",
+                ]);
+            }
+            $dReimbursement = $this->ReimbursementModel->get([
+                "reim_key" => $reimKey,
+            ], true);
+            if (empty($dReimbursement)) {
+                return redirect()->to(base_url("reimbursement"))->with("alert", [
+                    "code" => "danger",
+                    "message" => "Data tidak ditemukan",
+                ]);
+            }
+            $reimId = $dReimbursement["reim_id"];
+            $currentStatus = $dReimbursement["reim_status"];
+            if (!in_array($currentStatus, ["disetujui"])) {
+                throw new Exception("Pengajuan belum berstatus disetujui.", 400);
+            }
+            $dReimBerkas = $this->BerkasModel->get([
+                "rb_reim_id" => $reimId,
+            ]);
+            $this->cData["dReimBerkas"] = $dReimBerkas;
+            $this->cData["dReimbursement"] = $dReimbursement;
+            
+            return $this->_asPdf($this->cData);
+            // return view($this->viewDir . "/print", $this->cData);
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+
+    private function _asPdf($data)
+    {
+        try {
+            try {
+                $dReimbursement = $data["dReimbursement"];
+                $dPdf = [
+                    "sessUserId" => $data["dAccess"]["data"]["usr_id"],
+                    "sessUsername" => $data["dAccess"]["data"]["usr_username"],
+                    "dReimbursement" => $dReimbursement,
+                ];
+                $html = appViewInjectContent("reimbursement", "single_pdf", $dPdf);
+                $html2pdf = new Html2Pdf('P', 'A4', 'en', true, 'UTF-8', [0, 0, 0, 0]);
+                $html2pdf->pdf->setDisplayMode("fullpage");
+                $html2pdf->pdf->SetTitle($dReimbursement["reim_code"] . " - Reimbursement");
+                $html2pdf->setTestIsImage(false);
+
+                $html2pdf->writeHTML($html);
+                $html2pdf->output($dReimbursement["reim_code"] . "-reimbursement.pdf");
+                exit;
+            } catch (Html2PdfException $e) {
+                if (isset($html2pdf)) {
+                    $html2pdf->clean();
+                }
+                $formatter = new ExceptionFormatter($e);
+                echo $formatter->getHtmlMessage();
+            }
+        } catch (\Throwable $th) {
+            throw $th;
         }
     }
 

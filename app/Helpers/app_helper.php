@@ -26,6 +26,12 @@ function appRenderBadgeUserRole($role = "")
     return $label;
 }
 
+function appFormatRupiah($angka, $withPrefix = true)
+{
+    $formatted = number_format($angka, 0, ',', '.');
+    return $withPrefix ? 'Rp ' . $formatted : $formatted;
+}
+
 function appGetReimBerkas($rbKey, $berkasFName, int $tahun, int $triwulan, $claimantUGroupKey)
 {
     $berkasFUrl  = "";
@@ -37,9 +43,9 @@ function appGetReimBerkas($rbKey, $berkasFName, int $tahun, int $triwulan, $clai
 
     if (!empty($berkasFName)) {
         $berkasFPath = appConfigDataPath(
-            "reimbursement/berkas/" . $tahun . "/" . 
-            "triwulan_" . $triwulan . "/" . 
-            $claimantUGroupKey ."/". $berkasFName
+            "reimbursement/berkas/" . $tahun . "/" .
+                "triwulan_" . $triwulan . "/" .
+                $claimantUGroupKey . "/" . $berkasFName
         );
 
         if (file_exists($berkasFPath)) {
@@ -70,7 +76,7 @@ function appGetReimBerkas($rbKey, $berkasFName, int $tahun, int $triwulan, $clai
         "code"         => $code,
         "message"      => $message,
         "file_mime"    => $fileMime,
-        "file_category"=> $fileCategory,
+        "file_category" => $fileCategory,
         "file_name"    => $berkasFName,
         "file_path"    => $berkasFPath,
         "file_url"     => $berkasFUrl,
