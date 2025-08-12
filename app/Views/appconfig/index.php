@@ -65,20 +65,5 @@
 
 <?= $this->endSection(); ?>
 <?= $this->section("script_1"); ?>
-<?= appViewInjectScript($viewDir, "show_add_script"); ?>
 <?= appViewInjectScript($viewDir, "submit_edit_script"); ?>
-<!-- <script>
-    $("#dtbl_appconfig").DataTable({
-        "responsive": true,
-        "order": [
-            ['0', 'desc']
-        ],
-        fixedColumns: {
-            left: 1,
-        },
-        // "iDisplayLength": 10,
-
-        "columnDefs": [{}, ]
-    });
-</script> -->
 <?= $this->endSection(); ?>
