@@ -574,6 +574,65 @@ class Reimbursement extends BaseController
      * =================================================
      */
 
+    public function doAsAccepted()
+    {
+        $this->_onlyPostandAjax();
+        $redirect = $this->request->getUserAgent()->getReferrer();
+        try {
+            $dAccess = authVerifyAccess(true);
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+
+            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "validator") {
+                throw new Exception("Kamu tidak memiliki akses.", 400);
+            }
+
+            $reimId = $this->request->getPost("hdn_reim_id");
+            $reimKey = $this->request->getPost("hdn_reim_key");
+            $btnAction = $this->request->getPost("btn_action");
+
+            if (empty($reimId) || empty($reimKey)) {
+                throw new Exception("Data yang dibutuhkan tidak ada.", 400);
+            }
+
+            $dReimbursement = $this->ReimbursementModel->get([
+                "reim_id" => $reimId,
+                "reim_key" => $reimKey,
+            ], true);
+            if (empty($dReimbursement)) {
+                throw new Exception("Data tidak ditemukan.", 400);
+            }
+            $currentStatus = $dReimbursement["reim_status"];
+            if ($currentStatus != "validasi") {
+                throw new Exception("Status bukan [validasi] " . masterReimbursementStatus($currentStatus)["label"], 400);
+            }
+
+            if ($this->ReimbursementModel->edit([
+                "reim_status" => "disetujui",
+                "reim_updated_at" => appCurrentDateTime(),
+            ], [
+                "reim_id" => $reimId,
+            ])) {
+                $redirect = base_url("reimbursement/view?reim_key=" . $reimKey);
+                appJsonRespondSuccess(true, "Perubahan berhasil disimpan.", $redirect);
+                return;
+            } else {
+                throw new Exception("Perubahan gagal disimpan.", 400);
+            }
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+
     public function doAsRevision()
     {
         $this->_onlyPostandAjax();

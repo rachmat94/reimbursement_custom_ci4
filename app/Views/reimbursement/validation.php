@@ -123,6 +123,20 @@
                 </form>
             </div>
         </div>
+
+        <div class="card bg-success">
+            <div class="card-body ">
+                <form autocomplete="off" method="post" action="<?= base_url('reimbursement/do_as_accepted'); ?>" id="as_accepted_reimbursement_form" enctype="multipart/form-data">
+                    <h5>Disetujui:</h5>
+                    <input type="hidden" name="hdn_reim_id" value="<?= $dReimbursement['reim_id']; ?>">
+                    <input type="hidden" name="hdn_reim_key" value="<?= $dReimbursement["reim_key"]; ?>">
+
+                    <input type="hidden" name="btn_action" id="btn_action">
+                    
+                    <button class="btn btn-dark " type="submit" onclick="$('#btn_action').val('as_accepted')"> Jadikan pengajuan Disetujui</button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 <?= $this->endSection(); ?>
@@ -141,6 +155,7 @@
 <?= appViewInjectScript("reimbursement", "berkas/show_preview_script"); ?>
 <?= appViewInjectScript("reimbursement", "do_start_validate_script"); ?>
 <?= appViewInjectScript("reimbursement", "submit_as_revision_script"); ?>
+<?= appViewInjectScript("reimbursement", "submit_as_accepted_script"); ?>
 <script>
     $(function() {
         $('#txt_revision_note').summernote({

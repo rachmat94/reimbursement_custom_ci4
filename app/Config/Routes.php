@@ -130,6 +130,7 @@ $routes->group("reimbursement", static function ($routes) {
     $routes->post("do_start_validate", "Reimbursement::doStartValidate");
     $routes->get("validation", "Reimbursement::validation");
     $routes->post("do_as_revision", "Reimbursement::doAsRevision");
+    $routes->post("do_as_accepted","Reimbursement::doAsAccepted");
     // $routes->post("show_add", "Reimbursement::showAdd");
     // $routes->post("dtbl_main", "Reimbursement::dtblMain");
     // $routes->post("show_preview", "Reimbursement::showPreview");
