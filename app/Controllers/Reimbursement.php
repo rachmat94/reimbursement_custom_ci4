@@ -608,7 +608,7 @@ class Reimbursement extends BaseController
             ]);
             $this->cData["dReimBerkas"] = $dReimBerkas;
             $this->cData["dReimbursement"] = $dReimbursement;
-            
+
             return $this->_asPdf($this->cData);
             // return view($this->viewDir . "/print", $this->cData);
         } catch (\Throwable $th) {
@@ -648,6 +648,215 @@ class Reimbursement extends BaseController
         }
     }
 
+    /**
+     * =================================================
+     * SELESAI
+     * =================================================
+     */
+    public function showSetAsDone()
+    {
+        try {
+            $dAccess = authVerifyAccess(false);
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+
+            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "validator") {
+                throw new Exception("Kamu tidak memiliki akses.", 400);
+            }
+
+            $reimKey = $this->request->getPost("reim_key");
+            if (empty($reimKey)) {
+                throw new Exception("Data yang diperlukan tidak ditemukan.", 400);
+            }
+            $dReimbursement = $this->ReimbursementModel->get([
+                "reim_key" => $reimKey,
+            ], true);
+            if (empty($dReimbursement)) {
+                throw new Exception("Data tidak ditemukan.", 400);
+            }
+            $dView = [
+                "viewDir" => $this->viewDir,
+                "dReimbursement" => $dReimbursement,
+            ];
+            $redirect = $this->request->getUserAgent()->getReferrer();
+            $view = appViewInjectModal($this->viewDir, "set_as_done_modal", $dView);
+            $script = appViewInjectScript($this->viewDir, "submit_set_as_done_script");
+            appJsonRespondSuccess(true, "Request done.", $redirect, $view, $script);
+            return;
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+
+    // END SELESAI =====================================
+
+    /**
+     * =================================================
+     * PAYMENT
+     * =================================================
+     */
+    public function doEditPayment()
+    {
+        $this->_onlyPostandAjax();
+        $redirect = $this->request->getUserAgent()->getReferrer();
+        try {
+            $dAccess = authVerifyAccess(false);
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+
+            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "validator") {
+                throw new Exception("Kamu tidak memiliki akses.", 400);
+            }
+
+            $reimId = $this->request->getPost("hdn_reim_id");
+            $reimKey = $this->request->getPost("hdn_reim_key");
+            $status = $this->request->getPost("cbo_status_payment");
+            $date = $this->request->getPost("dt_payment") ?? null;
+            $detail = $this->request->getPost("txt_detail");
+
+            if (empty($reimId) || empty($reimKey)) {
+                throw new Exception("Data yang dibutuhkan tidak ada.", 400);
+            }
+            if (!empty($status) && !in_array($status, [1, 0])) {
+                throw new Exception("Invalid status", 400);
+            }
+            if (!empty($date)) {
+                if (!appValidateDate($date)) {
+                    throw new Exception("Invalid tanggal Pembayaran", 400);
+                }
+            }
+
+            $dReimbursement = $this->ReimbursementModel->get([
+                "reim_id" => $reimId,
+                "reim_key" => $reimKey,
+            ], true);
+            if (empty($dReimbursement)) {
+                throw new Exception("Data tidak ditemukan", 400);
+            }
+            $dEdit = [
+                "reim_is_paid"  => $status,
+                "reim_paid_at" => $date,
+                "reim_paid_detail" => $detail,
+                "reim_updated_at" => appCurrentDateTime(),
+            ];
+            $jbMaxFileSizeMb = 5;
+            $maxSizeBytes = $jbMaxFileSizeMb * 1024 * 1024;
+
+            $allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+            $allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+
+            $file = $this->request->getFile("file_payment");
+            // --- CEK APAKAH FILE DIUPLOAD --- //
+            if ($file->getError() === 4) { // Tidak ada file yang diupload
+            } else {
+                if ($file->isValid() && !$file->hasMoved()) {
+                    // Validasi ukuran
+                    if ($file->getSize() > $maxSizeBytes) {
+                        log_message("alert", "File  melebihi batas ukuran maksimum {$jbMaxFileSizeMb}MB.");
+                        throw new Exception("Ukurang maksimum $jbMaxFileSizeMb MB", 400);
+                    }
+
+                    // Validasi ekstensi dan mime
+                    $ext = strtolower($file->getExtension());
+                    $mime = $file->getMimeType();
+
+                    if (!in_array($ext, $allowedExtensions) || !in_array($mime, $allowedMimeTypes)) {
+                        log_message("alert", "File memiliki tipe yang tidak diizinkan. Ext: $ext, Mime: $mime.");
+                        throw new Exception("Tipe file tidak diizinkan.", 400);
+                    }
+                    $newName = $file->getRandomName();
+                    $uploadPath = appConfigDataPath("reimbursement/payment/");
+                    log_message("alert", "Reim Upload Path= " . $uploadPath);
+                    $filePath = $uploadPath . "/" . $newName;
+                    $file->move($uploadPath, $newName);
+                    if (!file_exists($filePath)) {
+                        log_message("alert", "File  tidak valid atau gagal diproses.");
+                        throw new Exception("Gagal upload file.", 400);
+                    }
+
+                    $dEdit["reim_paid_file_name"] = $newName;
+                } else {
+                    throw new Exception("File gagal diupload.", 400);
+                }
+            }
+
+            if ($this->ReimbursementModel->edit($dEdit, [
+                "reim_id" => $reimId,
+            ])) {
+                appJsonRespondSuccess(true, "Perubahan berhasil disimpan.", $redirect);
+                return;
+            } else {
+                throw new Exception("Gagal menyimpan perubahan.", 400);
+            }
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+    public function showEditPayment()
+    {
+        try {
+            $dAccess = authVerifyAccess(false);
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+
+            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "validator") {
+                throw new Exception("Kamu tidak memiliki akses.", 400);
+            }
+
+            $reimKey = $this->request->getPost("reim_key");
+            if (empty($reimKey)) {
+                throw new Exception("Data yang diperlukan tidak ditemukan.", 400);
+            }
+            $dReimbursement = $this->ReimbursementModel->get([
+                "reim_key" => $reimKey,
+            ], true);
+            if (empty($dReimbursement)) {
+                throw new Exception("Data tidak ditemukan.", 400);
+            }
+            $paidFileName = $dReimbursement["reim_paid_file_name"];
+            $dFilePayment = appGetFileReimPayment($reimKey, $paidFileName);
+            $dView = [
+                "viewDir" => $this->viewDir,
+                "dReimbursement" => $dReimbursement,
+                "dFilePayment" => $dFilePayment,
+            ];
+            $redirect = $this->request->getUserAgent()->getReferrer();
+            $view = appViewInjectModal($this->viewDir, "edit_payment_modal", $dView);
+            $script = appViewInjectScript($this->viewDir, "submit_edit_payment_script");
+            appJsonRespondSuccess(true, "Request done.", $redirect, $view, $script);
+            return;
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+    // END PAYMENT =====================================
     /**
      * =================================================
      * REVISI

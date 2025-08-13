@@ -83,44 +83,20 @@ function masterReimbursementStatus($type = "", bool $forceSingle = false)
         ],
         "validasi" => [
             "code" => "validasi",
-            "label" => "Proses Validasi",
+            "label" => "Validasi",
             "color" => "info",
             "description" => "",
         ],
         "revisi" => [
             "code" => "revisi",
-            "label" => "Perlu Revisi",
+            "label" => "Revisi",
             "color" => "warning",
-            "description" => "",
-        ],
-        "diajukan_ulang" => [
-            "code" => "diajukan_ulang",
-            "label" => "Diajukan Ulang",
-            "color" => "primary",
             "description" => "",
         ],
         "disetujui" => [
             "code" => "disetujui",
             "label" => "Disetujui",
             "color" => "success",
-            "description" => "",
-        ],
-        "dibayarkan" => [
-            "code" => "dibayarkan",
-            "label" => "Dibayarkan",
-            "color" => "info",
-            "description" => "",
-        ],
-        "ditolak" => [
-            "code" => "ditolak",
-            "label" => "Ditolak",
-            "color" => "danger",
-            "description" => "",
-        ],
-        "dibatalkan" => [
-            "code" => "dibatalkan",
-            "label" => "Dibatalkan",
-            "color" => "danger",
             "description" => "",
         ],
         "selesai" => [

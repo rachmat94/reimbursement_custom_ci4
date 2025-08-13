@@ -158,6 +158,15 @@
                     <p></p>
                     <a href="<?= base_url('reimbursement/print?reim_key=' . $dReimbursement['reim_key']); ?>&pdf=1" class="btn btn-danger" target="_blank"><i class="fas fa-file-pdf"></i> Download / Print</a>
                 </div>
+                <div class="card-body">
+                    <?php
+                    if ($dAccess["data"]["usr_role"] == "admin_validator" || $dAccess["data"]["usr_id"] == authMasterUserId()) {
+                    ?>
+                        <button class="btn btn-dark " onclick="showEditPayment('<?= $dReimbursement['reim_key']; ?>')"><i class="fas fa-edit"></i> Bukti pembayaran</button>
+                    <?php
+                    }
+                    ?>
+                </div>
             </div>
         <?php
         }
@@ -180,4 +189,5 @@
 <?= $this->section("script_1"); ?>
 <?= appViewInjectScript("reimbursement", "berkas/show_preview_script"); ?>
 <?= appViewInjectScript("reimbursement", "do_start_validate_script"); ?>
+<?= appViewInjectScript("reimbursement", "show_edit_payment_script"); ?>
 <?= $this->endSection(); ?>

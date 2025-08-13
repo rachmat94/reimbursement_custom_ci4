@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Models\BerkasModel;
+use App\Models\ReimbursementModel;
 use App\Models\UserModel;
 use Exception;
 
@@ -40,6 +41,27 @@ class File extends BaseController
             }
             $fPath = "";
             switch (strtolower($type)) {
+                case 'reimpayment':
+                    $reimKey = $this->request->getGet("reim_key") ?? "";
+                    $filename = $this->request->getGet("filename") ?? "";
+                    if (empty($reimKey) || empty($filename)) {
+                        throw new Exception("Required data not found.", 400);
+                    }
+                    $ReimbursementModel = new ReimbursementModel();
+
+                    $dReim = $ReimbursementModel->get([
+                        "reim_key" => $reimKey,
+                        "reim_paid_file_name" => $filename,
+                    ], true);
+                    if (empty($dReim)) {
+                        throw new Exception("Data not found.", 400);
+                    }
+                    
+                    $fPath = appConfigDataPath(
+                        "reimbursement/payment/" . $filename
+                    );
+                    break;
+                    
                 case 'reimberkas':
                     $rbKey = $this->request->getGet("rb_key") ?? "";
                     $filename = $this->request->getGet("filename") ?? "";

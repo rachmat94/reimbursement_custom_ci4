@@ -9,6 +9,8 @@ function appConfigDataDirList()
         "reimbursement/",
         "reimbursement/berkas/",
         "reimbursement/berkas/" . date("Y") . "/",
+        
+        "reimbursement/payment/",
     ];
     return $paths;
 }

@@ -32,6 +32,55 @@ function appFormatRupiah($angka, $withPrefix = true)
     return $withPrefix ? 'Rp ' . $formatted : $formatted;
 }
 
+function appGetFileReimPayment($reimKey, $paymentFName)
+{
+    $fUrl  = "";
+    $code        = "error";
+    $message     = "";
+    $fileMime    = "";
+    $fileCategory = "";
+    $fPath = "";
+
+    if (!empty($paymentFName)) {
+        $fPath = appConfigDataPath(
+            "reimbursement/payment/"  . $paymentFName
+        );
+
+        if (file_exists($fPath)) {
+            // Ambil MIME type asli file
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $fileMime = finfo_file($finfo, $fPath);
+            finfo_close($finfo);
+
+            // Kategorikan file
+            if ($fileMime === 'application/pdf') {
+                $fileCategory = 'pdf';
+            } elseif (strpos($fileMime, 'image/') === 0) {
+                $fileCategory = 'image';
+            } else {
+                $fileCategory = 'other';
+            }
+
+            $code = "success";
+            $fUrl = base_url('file/reimpayment?reim_key=' . $reimKey . '&filename=' . $paymentFName);
+        } else {
+            $message = "[ File not found ]";
+        }
+    } else {
+        $message = "[ empty ]";
+    }
+
+    return [
+        "code"         => $code,
+        "message"      => $message,
+        "file_mime"    => $fileMime,
+        "file_category" => $fileCategory,
+        "file_name"    => $paymentFName,
+        "file_path"    => $fPath,
+        "file_url"     => $fUrl,
+    ];
+}
+
 function appGetReimBerkas($rbKey, $berkasFName, int $tahun, int $triwulan, $claimantUGroupKey)
 {
     $berkasFUrl  = "";
