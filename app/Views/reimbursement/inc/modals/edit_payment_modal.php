@@ -62,6 +62,8 @@
                                 }
                                 ?>
                                 <a href="<?= $dFilePayment["file_url"]; ?>" target="_blank" class="mt-3 btn btn-link">New Tab <i class="fas fa-external-link-alt"></i></a>
+
+                                <button type="button" onclick="doDelFilePayment('<?= $dReimbursement['reim_key']; ?>')" target="_blank" class="mt-3 btn btn-link text-danger">Delete <i class="fas fa-times"></i></button>
                             </details>
                         <?php
                         }

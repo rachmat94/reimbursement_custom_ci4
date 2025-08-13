@@ -704,6 +704,64 @@ class Reimbursement extends BaseController
      * PAYMENT
      * =================================================
      */
+    public function doDelFilepayment()
+    {
+        $this->_onlyPostandAjax();
+        $redirect = $this->request->getUserAgent()->getReferrer();
+        try {
+            $dAccess = authVerifyAccess(false);
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+
+            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "validator") {
+                throw new Exception("Kamu tidak memiliki akses.", 400);
+            }
+
+            $reimKey = $this->request->getPost("reim_key");
+
+            if (empty($reimKey)) {
+                throw new Exception("Data yang dibutuhkan tidak ada.", 400);
+            }
+            $dReimbursement = $this->ReimbursementModel->get([
+                "reim_key" => $reimKey,
+            ], true);
+            if (empty($dReimbursement)) {
+                throw new Exception("Data tidak ditemukan.", 400);
+            }
+            $filePayment = $dReimbursement["reim_paid_file_name"];
+            if (empty($filePayment)) {
+                throw new Exception("File sudah terhapus.", 400);
+            }
+            $fPath = appConfigDataPath("reimbursement/payment/" . $filePayment);
+            $dEdit = [
+                "reim_paid_file_name" => null,
+                "reim_updated_at" => appCurrentDateTime(),
+            ];
+            if ($this->ReimbursementModel->edit($dEdit, ["reim_id" => $dReimbursement["reim_id"]])) {
+                if (file_exists($fPath)) {
+                    if (unlink($fPath)) {
+                    } else {
+                        log_message("error", "Gagal menghapus file: " . $fPath);
+                    }
+                }
+                appJsonRespondSuccess(true, "File berhasil dihapus.", $redirect);
+                return;
+            } else {
+                throw new Exception("Gagal menghapus file.", 400);
+            }
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
     public function doEditPayment()
     {
         $this->_onlyPostandAjax();
@@ -849,6 +907,7 @@ class Reimbursement extends BaseController
             $redirect = $this->request->getUserAgent()->getReferrer();
             $view = appViewInjectModal($this->viewDir, "edit_payment_modal", $dView);
             $script = appViewInjectScript($this->viewDir, "submit_edit_payment_script");
+            $script .= appViewInjectScript($this->viewDir, "do_del_file_payment_script");
             appJsonRespondSuccess(true, "Request done.", $redirect, $view, $script);
             return;
         } catch (\Throwable $th) {

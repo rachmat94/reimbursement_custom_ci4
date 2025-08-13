@@ -136,4 +136,5 @@ $routes->group("reimbursement", static function ($routes) {
     $routes->get("print", "Reimbursement::print");
     $routes->post("show_edit_payment", "Reimbursement::showEditPayment");
     $routes->post("do_edit_payment", "Reimbursement::doEditPayment");
+    $routes->post("do_del_file_payment", "Reimbursement::doDelFilePayment");
 });
