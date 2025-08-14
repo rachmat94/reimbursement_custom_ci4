@@ -36,8 +36,16 @@ class ReimbursementModel extends Model
 
     private function _dtblQuery($conditions = [])
     {
-        $builder = $this->db->table($this->table);
-        $builder->select($this->table . ".*");
+        $builder = $this->db->table("tb_reimbursements as tbreim");
+        $builder->join("tb_users", "tb_users.usr_id = tbreim.reim_claimant_usr_id", "left");
+        $builder->join("tb_group_user as tbgu", "tbgu.group_id = tb_users.usr_group_id", "left");
+        $builder->join("tb_categories", "tb_categories.cat_id = tbreim.reim_cat_id", "left");
+
+
+        $builder->select("tbreim.reim_id,tbreim.reim_key,tbreim.reim_code,tbreim.reim_triwulan_no,tbreim.reim_triwulan_tahun,tbreim.reim_status,tbreim.reim_amount");
+        $builder->select("tb_users.usr_id,tb_users.usr_key,tb_users.usr_code,tb_users.usr_username,tb_users.usr_email,tb_users.usr_role,tb_users.usr_group_id,tb_users.usr_group_category,tb_users.usr_is_active");
+        $builder->select("tbgu.group_id,tbgu.group_key,tbgu.group_code,tbgu.group_name,tbgu.group_admin_usr_id,tbgu.group_leader_usr_id");
+        $builder->select("tb_categories.cat_id,tb_categories.cat_code,tb_categories.cat_name,tb_categories.cat_key");
 
         if (isset($conditions["where"])) {
             foreach ($conditions["where"] as $key => $value) {
@@ -105,8 +113,17 @@ class ReimbursementModel extends Model
 
     function dTblCountAll($conditions = [])
     {
-        $builder = $this->db->table($this->table);
-        $builder->select($this->table . ".*");
+        $builder = $this->db->table("tb_reimbursements as tbreim");
+        $builder->join("tb_users", "tb_users.usr_id = tbreim.reim_claimant_usr_id", "left");
+        $builder->join("tb_group_user as tbgu", "tbgu.group_id = tb_users.usr_group_id", "left");
+        $builder->join("tb_categories", "tb_categories.cat_id = tbreim.reim_cat_id", "left");
+
+
+        $builder->select("tbreim.reim_id,tbreim.reim_key,tbreim.reim_code,tbreim.reim_triwulan_no,tbreim.reim_triwulan_tahun,tbreim.reim_status,tbreim.reim_amount");
+        $builder->select("tb_users.usr_id,tb_users.usr_key,tb_users.usr_code,tb_users.usr_username,tb_users.usr_email,tb_users.usr_role,tb_users.usr_group_id,tb_users.usr_group_category,tb_users.usr_is_active");
+        $builder->select("tbgu.group_id,tbgu.group_key,tbgu.group_code,tbgu.group_name,tbgu.group_admin_usr_id,tbgu.group_leader_usr_id");
+        $builder->select("tb_categories.cat_id,tb_categories.cat_code,tb_categories.cat_name,tb_categories.cat_key");
+        
         if (isset($conditions["where"])) {
             foreach ($conditions["where"] as $key => $value) {
                 $builder->where($key, $value);
@@ -215,7 +232,7 @@ class ReimbursementModel extends Model
     }
 
 
-    private $ufrColumnSearch = ["reim_code", "group_name", "usr_username", "usr_group_category", "usr_role", "reim_status","usr_email"];
+    private $ufrColumnSearch = ["reim_code", "group_name", "usr_username", "usr_group_category", "usr_role", "reim_status", "usr_email"];
     private $ufrColumnOrder = ["usr_id", "usr_id", "group_name", "usr_username", "usr_role", "usr_group_category", "reim_code", "reim_status", "cat_name", "reim_amount"];
     private $ufrMainOrder = ["reim_id" => "asc"];
 
