@@ -2085,12 +2085,102 @@ class Reimbursement extends BaseController
                 $dWhere["reim_triwulan_tahun"] = $tahun;
             }
 
-            $dReimbursements = $this->ReimbursementModel->get($dWhere);
-            $this->cData["dReimbursements"] = $dReimbursements;
+            // $dReimbursements = $this->ReimbursementModel->get($dWhere);
+            // $this->cData["dReimbursements"] = $dReimbursements;
+            $this->cData["triwulan"] = $triwulan;
+            $this->cData["tahun"] = $tahun;
             return view($this->viewDir . "/list", $this->cData);
         } catch (\Throwable $th) {
             appSaveThrowable($th);
             return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+
+    public function dtblUserForReim()
+    {
+        $this->_onlyPostandAjax();
+        try {
+            $dAccess = authVerifyAccess(true);
+            if (!$dAccess["success"]) {
+                throw new Exception($dAccess["message"], 400);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+
+            $conditions = [];
+            $triwulan = $this->request->getPost("triwulan");
+            $tahun = $this->request->getPost("tahun");
+
+            if (!empty($triwulan) && $triwulan > 0 && $triwulan <= 4) {
+                // $conditions["where"]["reim_triwulan_no"] = $triwulan;
+                $conditions["triwulan"] = $triwulan;
+            }
+            if (!empty($tahun) && $triwulan > 0) {
+                // $conditions["where"]["reim_triwulan_tahun"] = $tahun;
+                $conditions["tahun"] = $tahun;
+            }
+            log_message("alert", "dtbl_condition=" . json_encode($conditions));
+            $list = $this->ReimbursementModel->getDtblUserForReim($conditions);
+            $data = [];
+            $no = $_POST['start'] ?? 0;
+            foreach ($list as $item) :
+                $no++;
+                $usrId = $item["usr_id"];
+                $usrKey = $item["usr_key"];
+
+                $row = [];
+                $row[] =  $usrId;
+
+                $hasReim = $item["has_reimbursement"];
+                log_message("alert", "has reimbursement=" . $hasReim);
+                if ($hasReim == 1) {
+                    $reimKey = $item["reim_key"];
+                    $btnActions = "<a href='" . base_url("reimbursement/view?reim_key=" . $reimKey) . "' class='btn btn-sm btn-dark text-left' style='width:100px'  target='_blank'><i class='fas fa-folder-open'></i> View</a>";
+                } else {
+                    $btnActions = "<a href='" . base_url("reimbursement/create?triwulan=" . $triwulan . "&tahun=" . $tahun . "&usr_key=" . $usrKey) . "' class='btn btn-sm btn-dark text-left' style='width:100px'  target='_blank'><i class='fas fa-plus-circle'></i> Ajukan</a>";
+                }
+
+                $lblReimStatus = "";
+                if (!empty($item["reim_status"])) {
+                    $lblReimStatus = appRenderLabel(masterReimbursementStatus($item["reim_status"])["label"], "140px");
+                }
+
+                $lblReimAmount = "";
+                if (!empty($item["reim_amount"])) {
+                    $lblReimAmount = appRenderLabel(appFormatRupiah($item["reim_amount"]), "140px");
+                }
+
+                $lblUserCategory = "";
+                if (!empty($item["usr_group_category"])) {
+                    $lblUserCategory = appRenderLabel(masterUserCategoryInGroup($item["usr_group_category"])["label"], "140px");
+                }
+                $row[] = "" . $btnActions . "";
+                $row[] =  appRenderLabel($item["group_name"], "140px");
+                $row[] = appRenderLabel($item["usr_username"], "240px");
+                $row[] = appRenderBadgeUserRole($item["usr_role"]);
+                $row[] =  $lblUserCategory;
+                $row[] =  appRenderLabel($item["reim_code"], "140px");
+                $row[] =  $lblReimStatus;
+                $row[] =  appRenderLabel($item["cat_name"], "240px");
+                $row[] =  $lblReimAmount;
+
+                $data[] = $row;
+            endforeach;
+            $output = [
+                "draw" => $_POST['draw'],
+                "recordsTotal" => $this->ReimbursementModel->dTblCountAllUserForReim($conditions),
+                "recordsFiltered" => $this->ReimbursementModel->dTblCountFilteredUserForReim($conditions),
+                "data" => $data,
+                "code" => "success",
+                "message" => "Request Done.",
+            ];
+            echo json_encode($output);
+            return;
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            echo json_encode(appEmptyDTBL("error", $th->getMessage()));
+            return;
         }
     }
 }

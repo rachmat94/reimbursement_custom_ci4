@@ -213,4 +213,122 @@ class ReimbursementModel extends Model
             return false;
         }
     }
+
+
+    private $ufrColumnSearch = ["reim_code", "group_name", "usr_username", "usr_group_category", "usr_role", "reim_status","usr_email"];
+    private $ufrColumnOrder = ["usr_id", "usr_id", "group_name", "usr_username", "usr_role", "usr_group_category", "reim_code", "reim_status", "cat_name", "reim_amount"];
+    private $ufrMainOrder = ["reim_id" => "asc"];
+
+
+    private function _dtblQueryUserForReim($conditions = [])
+    {
+        $builder = $this->db->table("tb_users");
+        $builder->join("tb_group_user as tbgu", "tbgu.group_id = tb_users.usr_group_id", "left");
+        $builder->join("tb_reimbursements as tbreim", "tbreim.reim_claimant_usr_id = tb_users.usr_id", "left");
+        $builder->join("tb_categories", "tb_categories.cat_id = tbreim.reim_cat_id", "left");
+        $builder->select("tb_users.usr_id,tb_users.usr_key,tb_users.usr_code,tb_users.usr_username,tb_users.usr_email,tb_users.usr_role,tb_users.usr_group_id,tb_users.usr_group_category,tb_users.usr_is_active");
+        $builder->select("tbgu.group_id,tbgu.group_key,tbgu.group_code,tbgu.group_name,tbgu.group_admin_usr_id,tbgu.group_leader_usr_id");
+        $builder->select("tbreim.reim_id,tbreim.reim_key,tbreim.reim_code,tbreim.reim_triwulan_no,tbreim.reim_triwulan_tahun,tbreim.reim_status,tbreim.reim_amount");
+        $builder->select("tb_categories.cat_id,tb_categories.cat_code,tb_categories.cat_name,tb_categories.cat_key");
+        $builder->select("CASE WHEN tbreim.reim_id IS NULL THEN 0 ELSE 1 END AS has_reimbursement", false);
+
+        if (isset($conditions["where"])) {
+            foreach ($conditions["where"] as $key => $value) {
+                $builder->where($key, $value);
+            }
+        }
+
+        $builder->groupStart()
+            ->where('tbreim.reim_id IS NULL')
+            ->orGroupStart()
+            ->where('tbreim.reim_triwulan_no', $conditions["triwulan"])
+            ->where('tbreim.reim_triwulan_tahun', $conditions["tahun"])
+            ->groupEnd()
+            ->groupEnd();
+
+        $i = 0;
+        foreach ($this->ufrColumnSearch as $ev) {
+            if (isset($_POST['search']['value']) && !empty($_POST['search']['value'])) {
+                $_POST['search']['value'] = $_POST['search']['value'];
+            } else {
+                $_POST['search']['value'] = '';
+            }
+            if ($_POST['search']['value']) {
+                if ($i === 0) {
+                    $builder->groupStart();
+                    $builder->like($ev, $_POST['search']['value']);
+                } else {
+                    $builder->orLike($ev, $_POST['search']['value']);
+                }
+                if (count($this->ufrColumnSearch) - 1 == $i) {
+                    $builder->groupEnd();
+                }
+            }
+            $i++;
+        }
+
+        if (isset($_POST['order'])) {
+            $builder->orderBy($this->ufrColumnOrder[$_POST['order']['0']['column']], $_POST['order']['0']['dir']);
+        } elseif (isset($this->ufrMainOrder)) {
+            $order = $this->ufrMainOrder;
+            $builder->orderBy(key($order), $order[key($order)]);
+        }
+        return $builder;
+    }
+
+    function getDtblUserForReim($conditions = [])
+    {
+        $builder = $this->_dtblQueryUserForReim($conditions);
+
+        if (isset($_POST['length']) && $_POST['length'] < 1) {
+            $_POST['length'] = '10';
+        } elseif (isset($_POST['length']) && $_POST['length'] > 1) {
+            $_POST['length'] = $_POST['length'];
+        } else {
+            $_POST['length'] = 10;
+        }
+
+        if (isset($_POST['start']) && $_POST['start'] > 1) {
+            $_POST['start'] = $_POST['start'];
+        } else {
+            $_POST['start'] = 0;
+        }
+        $builder->limit($_POST['length'], $_POST['start']);
+        $query = $builder->get();
+        return $query->getResultArray();
+    }
+
+    function dTblCountFilteredUserForReim($conditions = [])
+    {
+        $builder = $this->_dtblQueryUserForReim($conditions);
+        return $builder->countAllResults();
+    }
+
+    function dTblCountAllUserForReim($conditions = [])
+    {
+        $builder = $this->db->table("tb_users");
+        $builder->join("tb_group_user as tbgu", "tbgu.group_id = tb_users.usr_group_id", "left");
+        $builder->join("tb_reimbursements as tbreim", "tbreim.reim_claimant_usr_id = tb_users.usr_id", "left");
+        $builder->join("tb_categories", "tb_categories.cat_id = tbreim.reim_cat_id", "left");
+        $builder->select("tb_users.usr_id,tb_users.usr_key,tb_users.usr_code,tb_users.usr_username,tb_users.usr_email,tb_users.usr_role,tb_users.usr_group_id,tb_users.usr_group_category,tb_users.usr_is_active");
+        $builder->select("tbgu.group_id,tbgu.group_key,tbgu.group_code,tbgu.group_name,tbgu.group_admin_usr_id,tbgu.group_leader_usr_id");
+        $builder->select("tbreim.reim_id,tbreim.reim_key,tbreim.reim_code,tbreim.reim_triwulan_no,tbreim.reim_triwulan_tahun,tbreim.reim_status,tbreim.reim_amount");
+        $builder->select("tb_categories.cat_id,tb_categories.cat_code,tb_categories.cat_name,tb_categories.cat_key");
+        $builder->select("CASE WHEN tbreim.reim_id IS NULL THEN 0 ELSE 1 END AS has_reimbursement", false);
+
+        if (isset($conditions["where"])) {
+            foreach ($conditions["where"] as $key => $value) {
+                $builder->where($key, $value);
+            }
+        }
+
+        $builder->groupStart()
+            ->where('tbreim.reim_id IS NULL')
+            ->orGroupStart()
+            ->where('tbreim.reim_triwulan_no', $conditions["triwulan"])
+            ->where('tbreim.reim_triwulan_tahun', $conditions["tahun"])
+            ->groupEnd()
+            ->groupEnd();
+        return $builder->countAllResults();
+    }
 }

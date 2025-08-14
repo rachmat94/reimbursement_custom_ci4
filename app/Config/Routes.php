@@ -137,4 +137,5 @@ $routes->group("reimbursement", static function ($routes) {
     $routes->post("show_edit_payment", "Reimbursement::showEditPayment");
     $routes->post("do_edit_payment", "Reimbursement::doEditPayment");
     $routes->post("do_del_file_payment", "Reimbursement::doDelFilePayment");
+    $routes->post("dtbl_user_for_reim","Reimbursement::dtblUserForReim");
 });

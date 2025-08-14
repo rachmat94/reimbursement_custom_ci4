@@ -625,20 +625,22 @@ function appRenderBtnDtbl(
     return $btn;
 }
 
-function appRenderBtnLinkDtbl($url = "", $text = "", $btnTypeClass = "btn-outline-dark", array $class = [], array $style = [])
+function appRenderBtnLinkDtbl($url = "", $text = "", string $btnTypeClass = "btn-outline-dark", array $class = [], array $style = [])
 {
     if ($text == "") {
         return "";
     }
-    $defClass = ["btn", "btn-block", "btn-sm", "text-left"];
-    $defClass[] = $btnTypeClass;
-    foreach ($class as $vClass) {
-        if (in_array($vClass, $defClass)) {
-        } else {
-            $defClass[] = $vClass;
-        }
+    $defClass = ["btn", "btn-block", "btn-sm", "text-left", $btnTypeClass];
+
+    if (is_array($class)) {
+        $strClass = implode(" ", $class);
     }
-    $strClass = implode(" ", $defClass);
+    log_message("alert", "defclass=" . json_encode($defClass));
+    $strClass .= implode(" ", $defClass);
+
+    log_message("alert", "class=" . json_encode($class));
+    log_message("alert", "defclass=" . json_encode($defClass));
+    // $strClass = implode(" ", $defClass);
     $strStyle = "";
     if (count($style) > 0) {
         $strStyle = "style='" . implode(" ", $style) . "'";
