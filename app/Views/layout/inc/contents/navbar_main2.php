@@ -153,7 +153,8 @@
           <img src="<?= $dAccess["data"]["photo_url"]; ?>" class="img-circle elevation-2" alt="User Image">
 
           <p>
-            <?= $dAccess["data"]["usr_email"] ?? ""; ?>
+            <?= $dAccess["data"]["usr_email"] ?? ""; ?><br>
+            Group: <?= $dAccess["data"]["group_name"] ?? "-"; ?>
           </p>
         </li>
 

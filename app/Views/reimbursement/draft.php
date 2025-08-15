@@ -142,7 +142,7 @@ if (!$isValid) {
                                                                 <button type="button" class="btn btn-dark btn-sm mt-2" onclick="showPreviewReimBerkas('<?= $vBerkas['rb_key']; ?>')">Preview Berkas</button>
                                                                 <button type="button" class="btn btn-warning btn-sm mt-2" onclick="showEditReimBerkas('<?= $vBerkas['rb_key']; ?>')">Edit Berkas</button>
                                                                 <button type="button" class="btn btn-danger btn-sm mt-2" onclick="doDelReimBerkas('<?= $vBerkas['rb_key']; ?>')">Hapus Berkas</button>
-                                                                
+
                                                             </p>
                                                         </li>
                                                     <?php
@@ -167,11 +167,33 @@ if (!$isValid) {
                     </div>
                     <div class="card-footer">
                         <input type="hidden" name="btn_action" id="btn_action">
-                        <button type="submit" onclick="$('#btn_action').val('save_draft')" class="btn btn-primary">Simpan Draft</button>
-                        <button type="submit" onclick="$('#btn_action').val('save_ajukan')" class="btn btn-dark">Simpan dan Ajukan Sekarang</button>
+                        <button type="submit" onclick="$('#btn_action').val('save_draft')" class="btn btn-primary"><i class="fas fa-file-alt"></i> Simpan Draft</button>
+                        <button type="submit" onclick="$('#btn_action').val('save_ajukan')" class="btn btn-dark"> <i class="fas fa-paper-plane"></i> Simpan dan Ajukan Sekarang</button>
+
+
+                        <a href="<?= base_url('reimbursement'); ?>" class="btn btn-secondary float-right"><i class="fas fa-backward"></i> Kembali ke Reimbursement</a>
                     </div>
                 </form>
             </div>
+
+            <?php
+            if (in_array($dReimbursement["reim_status"], ["draft", "revisi"])) {
+            ?>
+                <div class="card bg-danger mt-5">
+                    <div class="card-body ">
+                        <h5>Hapus Data</h5>
+                        <p>Data akan dihapus secara permanen dan tidak bisa dikembalikan lagi.</p>
+                        <form autocomplete="off" method="post" action="<?= base_url('reimbursement/do_delete'); ?>" id="delete_reimbursement_form" enctype="multipart/form-data">
+                            <input type="hidden" name="hdn_reim_id" value="<?= $dReimbursement["reim_id"]; ?>">
+                            <input type="hidden" name="hdn_reim_key" value="<?= $dReimbursement["reim_key"]; ?>">
+
+                            <button type="submit" class="btn bg-white"><i class="fas fa-times"></i> Hapus sekarang</button>
+                        </form>
+                    </div>
+                </div>
+            <?php
+            }
+            ?>
         </div>
     </div>
 <?php
@@ -215,4 +237,5 @@ if (!$isValid) {
 <?= appViewInjectScript("reimbursement", "berkas/show_upload_script"); ?>
 <?= appViewInjectScript("reimbursement", "berkas/show_edit_script"); ?>
 <?= appViewInjectScript("reimbursement", "berkas/show_preview_script"); ?>
+<?= appViewInjectScript("reimbursement", "submit_delete_script"); ?>
 <?= $this->endSection(); ?>

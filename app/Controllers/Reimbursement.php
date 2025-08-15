@@ -2058,6 +2058,89 @@ class Reimbursement extends BaseController
         }
     }
 
+    public function doDelete()
+    {
+        $this->_onlyPostandAjax();
+        $redirect = $this->request->getUserAgent()->getReferrer();
+        try {
+            $dAccess = authVerifyAccess(true);
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+
+            $reimId = $this->request->getPost("hdn_reim_id");
+            $reimKey = $this->request->getPost("hdn_reim_key");
+
+            if (empty($reimId) || empty($reimKey)) {
+                throw new Exception("Data yang diperlukan tidak ada.", 400);
+            }
+            $dReimbursement = $this->ReimbursementModel->get([
+                "reim_id" => $reimId,
+                "reim_key" => $reimKey,
+            ], true);
+            if (empty($dReimbursement)) {
+                throw new Exception("Data tidak ditemukan.", 404);
+            }
+            $currentStatus = $dReimbursement["reim_status"];
+            if ($sessUsrId != authMasterUserId()) {
+                if ($sessUsrRole != "admin_group") {
+                    throw new Exception("Hanya admin group yang bisa menghapus data ini.", 400);
+                }
+                if ($sessUsrId != $dReimbursement["reim_by_usr_id"]) {
+                    throw new Exception("Anda tidak diberikan akses.", 400);
+                }
+                if (!in_array($currentStatus, ["draft", "revisi"])) {
+                    throw new Exception("Hanya data berstatus draft atau revisi yang dapat dihapus.", 400);
+                }
+            }
+
+            $triwulan = $dReimbursement["reim_triwulan_no"];
+            $tahun = $dReimbursement["reim_triwulan_tahun"];
+            $claimantUGroupKey = $dReimbursement["ucg_group_key"];
+
+            $dReimBerkas = $this->BerkasModel->get([
+                "rb_reim_id" => $reimId,
+            ]);
+
+            if ($this->ReimbursementModel->del([
+                "reim_id" => $reimId,
+            ])) {
+                foreach ($dReimBerkas as $vBerkas) {
+                    $fName = $vBerkas["rb_file_name"];
+                    $fPath = appConfigDataPath("reimbursement/berkas/" . $tahun . "/triwulan_" . $triwulan . "/" . $claimantUGroupKey . "/" . $fName);
+                    if ($this->BerkasModel->del([
+                        "rb_id" => $vBerkas["rb_id"],
+                        "rb_reim_id" => $reimId,
+                    ])) {
+                        if (file_exists($fPath)) {
+                            if (unlink($fPath)) {
+                            } else {
+                                log_message("error", "Delete file berkas gagal=" . $fPath);
+                            }
+                        }
+                    } else {
+                        log_message("error", "delete data berkas gagal=" . $vBerkas["rb_id"]);
+                    }
+                }
+                $redirect = base_url("reimbursement");
+                appJsonRespondSuccess(true, "Data berhasil dihapus.", $redirect);
+                return;
+            } else {
+                throw new Exception("Gagal menghapus data.", 400);
+            }
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+
     public function list()
     {
         try {

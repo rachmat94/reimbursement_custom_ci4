@@ -39,7 +39,7 @@
                     ],
                     [
                         "name" => "Jumlah Nominal:",
-                        "value" => $dReimbursement["reim_amount"],
+                        "value" => appFormatRupiah($dReimbursement["reim_amount"]),
                     ],
                     [
                         "name" => "Kategori:",
@@ -166,6 +166,20 @@
                     <?php
                     }
                     ?>
+                </div>
+            </div>
+        <?php
+        } else if (in_array($dReimbursement["reim_status"], ["draft", "revisi"])) {
+        ?>
+            <div class="card">
+                <div class="card-body ">
+                    <h5>Hapus Data</h5>
+                    <form autocomplete="off" method="post" action="<?= base_url('reimbursement/do_delete'); ?>" id="delete_reimbursement_form" enctype="multipart/form-data">
+                        <input type="hidden" name="hdn_reim_id" value="<?= $dReimbursement["reim_id"]; ?>">
+                        <input type="hidden" name="hdn_reim_key" value="<?= $dReimbursement["reim_key"]; ?>">
+
+                        <button type="submit" class="btn btn-danger"><i class="fas fa-times"></i> Hapus sekarang</button>
+                    </form>
                 </div>
             </div>
         <?php
