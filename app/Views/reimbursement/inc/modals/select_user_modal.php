@@ -12,7 +12,7 @@
 
             <div class="modal-body">
                 <div class="table-responsive">
-                    <table class="table table-sm table-striped table-hovered" style="width: 100%;" id="dtbl_select_user">
+                    <table class="table table-sm table-striped table-hover" style="width: 100%;" id="dtbl_select_user">
                         <thead>
                             <tr>
                                 <th>Aksi</th>
@@ -30,7 +30,7 @@
                             ?>
                                 <tr>
                                     <td>
-                                        <button type="button" onclick="doSelectUser(<?= $vUser['usr_id']; ?>)" class="btn btn-sm btn-outline-dark">Pilih</button>
+                                        <button type="button" onclick="doSelectUser(<?= $vUser['usr_id']; ?>)" class="btn btn-sm btn-dark"><i class="fas fa-user"></i> Pilih</button>
                                     </td>
                                     <td><?= $vUser["usr_code"]; ?></td>
                                     <td><?= $vUser["usr_username"]; ?></td>

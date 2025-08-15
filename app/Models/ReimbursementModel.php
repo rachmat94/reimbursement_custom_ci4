@@ -41,7 +41,6 @@ class ReimbursementModel extends Model
         $builder->join("tb_group_user as tbgu", "tbgu.group_id = tb_users.usr_group_id", "left");
         $builder->join("tb_categories", "tb_categories.cat_id = tbreim.reim_cat_id", "left");
 
-
         $builder->select("tbreim.reim_id,tbreim.reim_key,tbreim.reim_code,tbreim.reim_triwulan_no,tbreim.reim_triwulan_tahun,tbreim.reim_status,tbreim.reim_amount");
         $builder->select("tb_users.usr_id,tb_users.usr_key,tb_users.usr_code,tb_users.usr_username,tb_users.usr_email,tb_users.usr_role,tb_users.usr_group_id,tb_users.usr_group_category,tb_users.usr_is_active");
         $builder->select("tbgu.group_id,tbgu.group_key,tbgu.group_code,tbgu.group_name,tbgu.group_admin_usr_id,tbgu.group_leader_usr_id");
@@ -51,6 +50,10 @@ class ReimbursementModel extends Model
             foreach ($conditions["where"] as $key => $value) {
                 $builder->where($key, $value);
             }
+        }
+
+        if (!empty($conditions["group_id"])) {
+            $builder->where("tbgu.group_id", $conditions["group_id"]);
         }
 
         $i = 0;
@@ -129,6 +132,11 @@ class ReimbursementModel extends Model
                 $builder->where($key, $value);
             }
         }
+
+        if (!empty($conditions["group_id"])) {
+            $builder->where("tbgu.group_id", $conditions["group_id"]);
+        }
+
         return $builder->countAllResults();
     }
 
@@ -255,6 +263,10 @@ class ReimbursementModel extends Model
             }
         }
 
+        if (!empty($conditions["group_id"])) {
+            $builder->where("tbgu.group_id", $conditions["group_id"]);
+        }
+
         $builder->groupStart()
             ->where('tbreim.reim_id IS NULL')
             ->orGroupStart()
@@ -337,6 +349,10 @@ class ReimbursementModel extends Model
             foreach ($conditions["where"] as $key => $value) {
                 $builder->where($key, $value);
             }
+        }
+
+        if (!empty($conditions["group_id"])) {
+            $builder->where("tbgu.group_id", $conditions["group_id"]);
         }
 
         $builder->groupStart()

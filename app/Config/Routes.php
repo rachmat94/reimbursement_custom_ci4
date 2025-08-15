@@ -140,4 +140,5 @@ $routes->group("reimbursement", static function ($routes) {
     $routes->post("dtbl_user_for_reim", "Reimbursement::dtblUserForReim");
     $routes->post("dtbl_reimbursements", "Reimbursement::dtblReimbursements");
     $routes->post("do_delete", "Reimbursement::doDelete");
+    $routes->post("do_back_to_validation", "Reimbursement::doBackToValidation");
 });

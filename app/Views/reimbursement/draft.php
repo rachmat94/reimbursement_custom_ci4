@@ -177,21 +177,12 @@ if (!$isValid) {
             </div>
 
             <?php
-            if (in_array($dReimbursement["reim_status"], ["draft", "revisi"])) {
-            ?>
-                <div class="card bg-danger mt-5">
-                    <div class="card-body ">
-                        <h5>Hapus Data</h5>
-                        <p>Data akan dihapus secara permanen dan tidak bisa dikembalikan lagi.</p>
-                        <form autocomplete="off" method="post" action="<?= base_url('reimbursement/do_delete'); ?>" id="delete_reimbursement_form" enctype="multipart/form-data">
-                            <input type="hidden" name="hdn_reim_id" value="<?= $dReimbursement["reim_id"]; ?>">
-                            <input type="hidden" name="hdn_reim_key" value="<?= $dReimbursement["reim_key"]; ?>">
-
-                            <button type="submit" class="btn bg-white"><i class="fas fa-times"></i> Hapus sekarang</button>
-                        </form>
-                    </div>
-                </div>
-            <?php
+            if ($dAccess["data"]["usr_id"] == authMasterUserId()) {
+                echo appViewInjectContent("reimbursement", "delete_card");
+            } else {
+                if (in_array($dReimbursement["reim_status"], ["draft", "revisi"])) {
+                    echo appViewInjectContent("reimbursement", "delete_card");
+                }
             }
             ?>
         </div>

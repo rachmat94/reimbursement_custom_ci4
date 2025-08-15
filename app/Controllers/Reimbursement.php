@@ -118,8 +118,7 @@ class Reimbursement extends BaseController
             $sessGroupName = $dAccess["data"]["group_name"];
             $dWhere = [];
             if ($sessUsrId != authMasterUserId()) {
-                $dWhere["usr_group_id"] = $sessUsrId;
-                $dWhere["usr_is_active"] = 1;
+                $dWhere["usr_group_id"] = $sessGroupId;
             }
             $dUsers = $this->UserModel->get($dWhere);
             $dView = [
@@ -152,8 +151,11 @@ class Reimbursement extends BaseController
             $sessGroupId = $dAccess["data"]["group_id"];
             $sessGroupName = $dAccess["data"]["group_name"];
 
-            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "admin_group") {
-                throw new Exception("Anda tida punya akses.", 400);
+
+            if ($sessUsrId != authMasterUserId()) {
+                if ($sessUsrRole != "admin_group") {
+                    throw new Exception("Anda tidak punya akses.", 400);
+                }
             }
 
             $userId = $this->request->getPost("hdn_user_id") ?? null;
@@ -220,6 +222,8 @@ class Reimbursement extends BaseController
             $code = $this->ReimbursementModel->generateCode();
             $swTriwulan = $dSubmissionSchedule["sw_triwulan"];
             $swTahun =  $dSubmissionSchedule["sw_tahun"];
+            $claimantUGroupId = $dUser["group_id"];
+            $claimantUGroupKey = $dUser["group_key"];
 
             $dExist = $this->ReimbursementModel->get([
                 "reim_triwulan_no" => $swTriwulan,
@@ -227,7 +231,8 @@ class Reimbursement extends BaseController
                 "reim_claimant_usr_id" => $userId,
             ], true);
             if ($dExist) {
-                throw new Exception("User " . $dUser["usr_username"] . " sudah memiliki data Reimbursement Triwulan " . $swTriwulan . ", " . $swTahun, 400);
+                $link = "<a href='" . base_url('reimbursement/view?reim_key=' . $dExist["reim_key"]) . "'>View [ " . $dExist["reim_code"] . " ]</a>";
+                throw new Exception("User " . $dUser["usr_username"] . " sudah memiliki data Reimbursement Triwulan " . $swTriwulan . ", " . $swTahun . "<br>" . $link, 400);
             }
             $dAdd = [
                 "reim_key" => $key,
@@ -247,6 +252,8 @@ class Reimbursement extends BaseController
             $redirect = base_url("reimbursement");
             if ($action == "do_submit") {
                 $status = "diajukan";
+                $dAdd["reim_diajukan_pada"] = appCurrentDateTime();
+                $dAdd["reim_diajukan_by_usr_id"] = $sessUsrId;
                 $redirect = base_url("reimbursement/view?reim_key=" . $key);
             } else if ($action == "as_draft") {
                 $status = "draft";
@@ -322,8 +329,7 @@ class Reimbursement extends BaseController
                             continue;
                         }
 
-                        $claimantUGroupId = $dUser["group_id"];
-                        $claimantUGroupKey = $dUser["group_key"];
+
                         $newName = $file->getRandomName();
                         $uploadPath = appConfigDataPath("reimbursement/berkas/" . $swTahun . "/" . "triwulan_" . $swTriwulan . "/" . $claimantUGroupKey);
                         log_message("alert", "Reim upload path =" . $uploadPath);
@@ -362,17 +368,50 @@ class Reimbursement extends BaseController
                     }
                 endforeach;
 
+                if ($dAdd["reim_status"] == "draft") {
+                    $doRollback = false;
+                }
+
                 // Jika terjadi error pada salah satu file
                 if ($doRollback) {
                     // Lakukan rollback jika kamu pakai transaksi
-                    $this->ReimbursementModel->del([
+                    if ($this->ReimbursementModel->del([
                         "reim_id" => $newReimId,
-                    ]); // atau rollback lainnya
+                    ])) {
+                        if ($this->BerkasModel->del([
+                            "rb_reim_id" => $newReimId,
+                        ])) {
+                            foreach ($uploadedFiles as $vFile) {
+                                $fName = $vFile;
+                                if (!empty($fName)) {
+                                    $fPath = appConfigDataPath("reimbursement/berkas/" . $swTahun . "/triwulan_" . $swTriwulan . "/" . $claimantUGroupKey . "/" . $fName);
+                                    if (file_exists($fPath)) {
+                                        if (unlink($fPath)) {
+                                        } else {
+                                            log_message("error", "file berkas gagal dihapus = " . $fPath);
+                                        }
+                                    } else {
+                                        log_message("error", "file berkas not found=" . $fPath);
+                                    }
+                                }
+                            }
+                        } else {
+                            log_message("error", "Gagal hapus berkas.reimid=" . $newReimId);
+                        }
+                    } else {
+                        log_message("error", "Rollback gagal=" . $newReimId);
+                    }
                     throw new Exception("Pengajuan gagal disimpan karena ada berkas yang tidak valid.", 400);
                 } else {
+                    /*===============================================================
+                    *
+                    * HANYA UNTUK DEMO. HAPUS.
+                    */
                     if ((getenv("demo"))) {
                         FileLimiter::limitFiles(appConfigDataPath("reimbursement/berkas"), 100);
                     }
+                    /*==============================================================
+                    */
                     if ($status == "diajukan") {
                         appJsonRespondSuccess(true, "Pengajuan berhasil disimpan untuk dilakukan validasi.", $redirect);
                         return;
@@ -1849,6 +1888,62 @@ class Reimbursement extends BaseController
         }
     }
 
+    public function doBackToValidation()
+    {
+        $this->_onlyPostandAjax();
+        $redirect = $this->request->getUserAgent()->getReferrer();
+        try {
+            $dAccess = authVerifyAccess(false, "draft_reimbursement");
+            if (!$dAccess["success"]) {
+                return redirect()->to(base_url('login'))->with("alert", [
+                    "code" => "error",
+                    "message" => $dAccess["message"],
+                ]);
+            }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+
+
+            if ($sessUsrId != authMasterUserId()) {
+                throw new Exception("kamu tidak memiliki akses.", 400);
+            }
+
+            $reimId = $this->request->getPost("hdn_reim_id");
+            $reimKey = $this->request->getPost("hdn_reim_key");
+            if (empty($reimId) || empty($reimKey)) {
+                throw new Exception("Data yang dibutuhkan tidak ada.", 400);
+            }
+            $dReimbursement = $this->ReimbursementModel->get([
+                "reim_id" => $reimId,
+                "reim_key" => $reimKey,
+            ], true);
+            if (empty($dReimbursement)) {
+                throw new Exception("Data tidak ditemukan.", 400);
+            }
+            $currentStatus = $dReimbursement["reim_status"];
+            if ($currentStatus != "disetujui") {
+                throw new Exception("Status bukan Disetujui.", 400);
+            }
+            $dEdit = [
+                "reim_status" => "validasi",
+                "reim_updated_at" => appCurrentDateTime(),
+            ];
+            if ($this->ReimbursementModel->edit($dEdit, [
+                "reim_id" => $reimId,
+            ])) {
+                appJsonRespondSuccess(true, "Data berhasil dikembalikan ke validasi.");
+                return;
+            } else {
+                throw new Exception("Perubahan data gagal dilakukan", 400);
+            }
+        } catch (\Throwable $th) {
+            appSaveThrowable($th);
+            return $this->sendResponse($th->getCode(), $th->getMessage());
+        }
+    }
+
     public function doSaveDraft()
     {
         try {
@@ -1864,8 +1959,10 @@ class Reimbursement extends BaseController
             $sessGroupId = $dAccess["data"]["group_id"];
             $sessGroupName = $dAccess["data"]["group_name"];
 
-            if ($sessUsrId != authMasterUserId() && $sessUsrRole != "admin_group") {
-                throw new Exception("Kamu tidak memiliki akses.", 400);
+            if ($sessUsrId != authMasterUserId()) {
+                if ($sessUsrRole != "admin_group") {
+                    throw new Exception("Kamu tidak memiliki akses.", 400);
+                }
             }
 
             $reimId = $this->request->getPost("hdn_reim_id");
@@ -1875,7 +1972,7 @@ class Reimbursement extends BaseController
             $detail = $this->request->getPost("txt_detail");
             $btnAction = $this->request->getPost("btn_action");
 
-            log_message("alert", "action=" . json_encode($btnAction));
+            // log_message("alert", "action=" . json_encode($btnAction));
 
             if (empty($reimId)) {
                 throw new Exception("Reim Id not found.", 400);
@@ -1894,9 +1991,15 @@ class Reimbursement extends BaseController
             if (empty($dReimbursement)) {
                 throw new Exception("Data tidak ditemukan.", 404);
             }
+
+            if ($dReimbursement["ucg_group_id"] != $sessGroupId) {
+                throw new Exception("Anda tidak diberikan akses.", 400);
+            }
+
             if ($dReimbursement["reim_status"] != "draft") {
                 throw new Exception("Gagal menyimpan perubahan karena status sudah bukan draft.", 400);
             }
+
             $reimTriwulanTahun = $dReimbursement["reim_triwulan_tahun"];
             $reimTriwulan = $dReimbursement["reim_triwulan_no"];
             $reimClaimantUsrId = $dReimbursement["reim_claimant_usr_id"];
@@ -1924,6 +2027,19 @@ class Reimbursement extends BaseController
                 $dEdit["reim_diajukan_pada"] = appCurrentDateTime();
                 $dEdit["reim_diajukan_by_usr_id"] = $sessUsrId;
                 $redirect = base_url("reimbursement/view?reim_key=" . $reimKey);
+
+                $dJenisBerkas = $this->JenisBerkasModel->get(["jb_is_active" => 1]);
+                foreach ($dJenisBerkas as $vJBerkas) {
+                    if ($vJBerkas["jb_is_required"] == 1) {
+                        $dBerkas = $this->BerkasModel->get([
+                            "rb_reim_id" => $reimId,
+                            "rb_jb_id" => $vJBerkas["jb_id"],
+                        ]);
+                        if (empty($dBerkas)) {
+                            throw new Exception("Draft gagal diajukan karena ada berkas yang dibutuhkan.", 400);
+                        }
+                    }
+                }
             } else {
                 $redirect = base_url("reimbursement/draft?reim_key=" . $reimKey);
             }
@@ -2190,10 +2306,14 @@ class Reimbursement extends BaseController
             $sessUsrId = $dAccess["data"]["usr_id"];
             $sessGroupId = $dAccess["data"]["group_id"];
             $sessGroupName = $dAccess["data"]["group_name"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
 
             $conditions = [];
             $triwulan = $this->request->getPost("triwulan");
             $tahun = $this->request->getPost("tahun");
+            if (in_array($sessUsrRole, ["admin_group", "user"])) {
+                $conditions["group_id"] = $sessGroupId;
+            }
 
             if (!empty($triwulan) && $triwulan > 0 && $triwulan <= 4) {
                 // $conditions["where"]["reim_triwulan_no"] = $triwulan;
@@ -2278,8 +2398,12 @@ class Reimbursement extends BaseController
             $sessUsrId = $dAccess["data"]["usr_id"];
             $sessGroupId = $dAccess["data"]["group_id"];
             $sessGroupName = $dAccess["data"]["group_name"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
 
             $conditions = [];
+            if (in_array($sessUsrRole, ["admin_group", "user"])) {
+                $conditions["group_id"] = $sessGroupId;
+            }
             $list = $this->ReimbursementModel->getDtbl($conditions);
             $data = [];
             $no = $_POST['start'] ?? 0;

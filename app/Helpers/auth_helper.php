@@ -150,20 +150,6 @@ function authVerifyAccess(bool $onlyLogin = false, string $accessResource = "", 
                 ]
             ];
         } else {
-            if (empty($accessResource)) {
-                throw new Exception("Access resource is required.", 400);
-            }
-            // log_message("alert", "authVerifyAccess: accessResource: " . $accessResource);
-            $AuthModel = new AuthModel();
-            $dACL = $AuthModel->getACL($accessResource);
-            if (empty($dACL)) {
-                throw new Exception("Access denied.", 403);
-            }
-            // log_message("alert", "authVerifyAccess: dACL: " . json_encode($dACL));
-            if (!in_array(strtolower($dSession["usr_role"]), $dACL)) {
-                throw new Exception("Access denied for your role.", 403);
-            }
-
             return [
                 "success" => true,
                 "message" => "You have access",
@@ -217,9 +203,9 @@ function authRoleBy($role = "")
     }
     switch (strtolower($role)) {
         case "super_user":
-            return ["user", "admin_group", "admin_validator", "super_user"];
+            return ["user", "admin_group", "validator", "super_user"];
         case "admin_group":
-        case "admin_validator":
+        case "validator":
         case "user":
         default:
             return [];

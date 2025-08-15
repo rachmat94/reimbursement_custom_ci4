@@ -119,7 +119,7 @@
 
                     <input type="hidden" name="btn_action" id="btn_action">
                     <button class="btn btn-primary " type="submit" onclick="$('#btn_action').val('save')"><i class="fas fa-save"></i> Simpan perubahan detail revisi</button>
-                    <button class="btn btn-dark " type="submit" onclick="$('#btn_action').val('as_revision')"> Jadikan harus direvisi</button>
+                    <button class="btn btn-dark " type="submit" onclick="$('#btn_action').val('as_revision')"> Simpan & Jadikan harus direvisi</button>
                 </form>
             </div>
         </div>

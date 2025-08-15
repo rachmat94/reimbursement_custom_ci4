@@ -416,8 +416,17 @@ class Group extends BaseController
                     "message" => $dAccess["message"],
                 ]);
             }
+            $sessUsrId = $dAccess["data"]["usr_id"];
+            $sessGroupId = $dAccess["data"]["group_id"];
+            $sessGroupName = $dAccess["data"]["group_name"];
+            $sessUsrRole = $dAccess["data"]["usr_role"];
+
             $this->cData["dAccess"] = $dAccess;
-            $dGroups = $this->GroupModel->get();
+            $conditions = [];
+            if (in_array($sessUsrRole, ["admin_group", "user"])) {
+                $conditions["group_id"] = $sessGroupId;
+            }
+            $dGroups = $this->GroupModel->get($conditions);
             $no = 0;
             $dDtbl = [];
             foreach ($dGroups as $item) :

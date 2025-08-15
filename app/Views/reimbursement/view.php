@@ -111,17 +111,32 @@
             $dReimbursement["reim_status"] == "draft"
         ) {
         ?>
-            <a href="<?= base_url('reimbursement/draft?reim_key=' . $dReimbursement['reim_key']); ?>" class="btn btn-warning" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i> Ubah</a>
+            <div class="card bg-warning">
+                <div class="card-body">
+                    <h5>Ubah Data</h5>
+                    <a href="<?= base_url('reimbursement/draft?reim_key=' . $dReimbursement['reim_key']); ?>" class="btn bg-white"><i class="fas fa-edit"></i> Ubah</a>
+                </div>
+            </div>
+
             <?php
         } else if (
             $dReimbursement["reim_status"] == "diajukan"
         ) {
-            if ($dAccess["data"]["usr_role"] == "admin_validator" || $dAccess["data"]["usr_id"] == authMasterUserId()) {
+            if ($dAccess["data"]["usr_role"] == "validator" || $dAccess["data"]["usr_id"] == authMasterUserId()) {
             ?>
                 <div class="card bg-warning">
                     <div class="card-body ">
                         <h5>Validasi:</h5>
-                        <button class="btn btn-dark " onclick="doStartValidate('<?= $dReimbursement['reim_key']; ?>')">Saya akan memulai validasi data ini</button>
+                        <button class="btn bg-white " onclick="doStartValidate('<?= $dReimbursement['reim_key']; ?>')"><i class="fas fa-check-circle"></i> Saya akan memulai validasi data ini</button>
+                    </div>
+                </div>
+            <?php
+            } else if ($dAccess["data"]["usr_role"] == "admin_group") {
+            ?>
+                <div class="card bg-info">
+                    <div class="card-body">
+                        <h5>Pengajuan telah diajukan</h5>
+                        <p>Silahkan tunggu Admin Validator untuk memvalidasi pengajuan anda.</p>
                     </div>
                 </div>
             <?php
@@ -129,12 +144,26 @@
         } else if (
             $dReimbursement["reim_status"] == "validasi"
         ) {
-            if ($dAccess["data"]["usr_role"] == "admin_validator" || $dAccess["data"]["usr_id"] == authMasterUserId()) {
+            if ($dAccess["data"]["usr_role"] == "validator" || $dAccess["data"]["usr_id"] == authMasterUserId()) {
             ?>
                 <div class="card bg-warning">
                     <div class="card-body ">
-                        <h5>Validasi:</h5>
-                        <a href="<?= base_url('reimbursement/validation?reim_key=' . $dReimbursement['reim_key']); ?>" class="btn btn-dark"><i class="fas fa-edit"></i> Lanjutkan</a>
+                        <h5><i class="fas fa-clipboard-check"></i> Validasi Reimbursement</h5>
+                        <a href="<?= base_url('reimbursement/validation?reim_key=' . $dReimbursement['reim_key']); ?>"
+                            class="btn btn-success">
+                            <i class="fas fa-clipboard-check"></i> Lanjutkan Validasi
+                        </a>
+
+                    </div>
+                </div>
+            <?php
+            } else {
+            ?>
+                <div class="card bg-dark">
+                    <div class="card-body ">
+                        <h5><i class="fas fa-clipboard-check"></i> Pengajuan Anda sedang divalidasi</h5>
+                        <p class="">Mohon tunggu dan periksa secara berkala.</p>
+
                     </div>
                 </div>
             <?php
@@ -144,8 +173,13 @@
             <div class="card bg-warning">
                 <div class="card-body ">
                     <h5>Pengajuan ini perlu direvisi:</h5>
-
-                    <a href="<?= base_url('reimbursement/revision?reim_key=' . $dReimbursement['reim_key']); ?>" class="btn btn-dark"><i class="fas fa-edit"></i> Lihat</a>
+                    <?php
+                    if ($dAccess["data"]["usr_role"] == "admin_group" || $dAccess["data"]["usr_id"] == authMasterUserId()) {
+                    ?>
+                        <a href="<?= base_url('reimbursement/revision?reim_key=' . $dReimbursement['reim_key']); ?>" class="btn btn-dark"><i class="fas fa-edit"></i> Lihat</a>
+                    <?php
+                    }
+                    ?>
                 </div>
             </div>
 
@@ -153,37 +187,72 @@
         } else if (in_array($dReimbursement["reim_status"], ["disetujui"])) {
         ?>
             <div class="card bg-success">
-                <div class="card-body ">
+                <div class="card-body pb-2">
                     <h5>Pengajuan ini disetujui:</h5>
                     <p></p>
                     <a href="<?= base_url('reimbursement/print?reim_key=' . $dReimbursement['reim_key']); ?>&pdf=1" class="btn btn-danger" target="_blank"><i class="fas fa-file-pdf"></i> Download / Print</a>
-                </div>
-                <div class="card-body">
+
                     <?php
-                    if ($dAccess["data"]["usr_role"] == "admin_validator" || $dAccess["data"]["usr_id"] == authMasterUserId()) {
+                    if ($dAccess["data"]["usr_role"] == "validator" || $dAccess["data"]["usr_id"] == authMasterUserId()) {
                     ?>
                         <button class="btn btn-dark " onclick="showEditPayment('<?= $dReimbursement['reim_key']; ?>')"><i class="fas fa-edit"></i> Bukti pembayaran</button>
                     <?php
                     }
                     ?>
                 </div>
-            </div>
-        <?php
-        } else if (in_array($dReimbursement["reim_status"], ["draft", "revisi"])) {
-        ?>
-            <div class="card">
-                <div class="card-body ">
-                    <h5>Hapus Data</h5>
-                    <form autocomplete="off" method="post" action="<?= base_url('reimbursement/do_delete'); ?>" id="delete_reimbursement_form" enctype="multipart/form-data">
-                        <input type="hidden" name="hdn_reim_id" value="<?= $dReimbursement["reim_id"]; ?>">
-                        <input type="hidden" name="hdn_reim_key" value="<?= $dReimbursement["reim_key"]; ?>">
-
-                        <button type="submit" class="btn btn-danger"><i class="fas fa-times"></i> Hapus sekarang</button>
-                    </form>
+                <div class="card-body bg-white border ">
+                    <h6>Pembayaran:</h6>
+                    <?= appRenderTableInfo2([
+                        [
+                            "name" => "Status:",
+                            "value" => appRenderBadgeStatus($dReimbursement["reim_is_paid"], ["Belum dibayarkan", "Sudah dibayarkan"]),
+                        ],
+                    ]); ?>
                 </div>
             </div>
+
+            <?php
+
+            if ($dAccess["data"]["usr_role"] == "validator" || $dAccess["data"]["usr_role"] == "admin_group" || $dAccess["data"]["usr_id"] == authMasterUserId()) {
+            ?>
+                <div class="card bg-danger mt-5">
+                    <div class="card-body ">
+                        <h5>Terjadi kesalahan & harus divalidasi ulang?</h5>
+                        <?php
+                        if ($dAccess["data"]["usr_id"] == authMasterUserId()) {
+                        ?>
+                            <p></p>
+                            <form autocomplete="off" method="post" action="<?= base_url('reimbursement/do_back_to_validation'); ?>" id="back_to_validation_reim_form" enctype="multipart/form-data">
+                                <input type="hidden" name="hdn_reim_id" value="<?= $dReimbursement["reim_id"]; ?>">
+                                <input type="hidden" name="hdn_reim_key" value="<?= $dReimbursement["reim_key"]; ?>">
+
+                                <button type="submit" class="btn bg-white"><i class="fas fa-sync"></i> Kembalikan ke Validasi</button>
+                            </form>
+                        <?php
+                        } else {
+                        ?>
+                            <p>Silahkan hubungi Master untuk mengembalikan status nya menjadi Validasi.</p>
+                        <?php
+                        }
+                        ?>
+
+                    </div>
+                </div>
         <?php
+            }
         }
+
+        if ($dAccess["data"]["usr_id"] == authMasterUserId()) {
+            echo appViewInjectContent("reimbursement", "delete_card");
+        } else {
+            if (in_array($dReimbursement["reim_status"], ["draft", "revisi"])) {
+                if($dAccess["data"]["usr_role"] == "admin_group"){
+                    echo appViewInjectContent("reimbursement", "delete_card");
+                }
+            }
+        }
+
+
         ?>
 
     </div>
@@ -204,4 +273,12 @@
 <?= appViewInjectScript("reimbursement", "berkas/show_preview_script"); ?>
 <?= appViewInjectScript("reimbursement", "do_start_validate_script"); ?>
 <?= appViewInjectScript("reimbursement", "show_edit_payment_script"); ?>
+<?= appViewInjectScript("reimbursement", "submit_delete_script"); ?>
+<?php
+if ($dReimbursement["reim_status"] == "disetujui" && $dAccess["data"]["usr_id"] == authMasterUserId()) {
+?>
+    <?= appViewInjectScript("reimbursement", "submit_back_to_validation_script"); ?>
+<?php
+}
+?>
 <?= $this->endSection(); ?>

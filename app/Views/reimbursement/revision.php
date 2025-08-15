@@ -14,12 +14,9 @@ if (!$isValid) {
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-body pb-0">
-                    <h5>Draft</h5>
-                </div>
                 <div class="card-body">
                     <p>
-                        Proses pengisian data tidak dapat dilakukan:<br>
+                        Invalid
                         <?= $message ?? ""; ?>
                     </p>
                     <a href="<?= base_url('reimbursement'); ?>" class="btn btn-link">Kembali</a>
@@ -35,7 +32,7 @@ if (!$isValid) {
             <div class="card">
                 <form autocomplete="off" method="post" action="<?= base_url('reimbursement/do_save_revision'); ?>" id="revision_reimbursement_form" enctype="multipart/form-data">
                     <div class="card-body border">
-                        <h5>Draft Pengajuan</h5>
+                        <h5>Revisi</h5>
                         <dl>
                             <dd><b>Triwulan:</b> <?= $dReimbursement["reim_triwulan_no"]; ?>, <?= $dReimbursement["reim_triwulan_tahun"]; ?></dd>
                             <dd><b>Group:</b> <?= "[ " . $dReimbursement["ucg_group_code"] . " ] " . $dReimbursement["ucg_group_name"]; ?></dd>
@@ -43,7 +40,7 @@ if (!$isValid) {
                     </div>
                     <div class="card-body bg-warning">
                         <h4>Detail Revisi:</h4>
-                        <?=$dRevision["rrev_note"];?>
+                        <?= $dRevision["rrev_note"]; ?>
                     </div>
                     <div class="card-body">
                         <input type="hidden" name="hdn_reim_id" value="<?= $dReimbursement['reim_id']; ?>">
@@ -146,7 +143,7 @@ if (!$isValid) {
                                                                 <button type="button" class="btn btn-dark btn-sm mt-2" onclick="showPreviewReimBerkas('<?= $vBerkas['rb_key']; ?>')">Preview Berkas</button>
                                                                 <button type="button" class="btn btn-warning btn-sm mt-2" onclick="showEditReimBerkas('<?= $vBerkas['rb_key']; ?>')">Edit Berkas</button>
                                                                 <button type="button" class="btn btn-danger btn-sm mt-2" onclick="doDelReimBerkas('<?= $vBerkas['rb_key']; ?>')">Hapus Berkas</button>
-                                                                
+
                                                             </p>
                                                         </li>
                                                     <?php
@@ -176,6 +173,18 @@ if (!$isValid) {
                     </div>
                 </form>
             </div>
+
+            <?php
+            if ($dAccess["data"]["usr_id"] == authMasterUserId()) {
+                echo appViewInjectContent("reimbursement", "delete_card");
+            } else {
+                if (in_array($dReimbursement["reim_status"], ["draft", "revisi"])) {
+                    if ($dAccess["data"]["usr_role"] == "admin_group") {
+                        echo appViewInjectContent("reimbursement", "delete_card");
+                    }
+                }
+            }
+            ?>
         </div>
     </div>
 <?php
@@ -219,4 +228,5 @@ if (!$isValid) {
 <?= appViewInjectScript("reimbursement", "berkas/show_upload_script"); ?>
 <?= appViewInjectScript("reimbursement", "berkas/show_edit_script"); ?>
 <?= appViewInjectScript("reimbursement", "berkas/show_preview_script"); ?>
+<?= appViewInjectScript("reimbursement", "submit_delete_script"); ?>
 <?= $this->endSection(); ?>
